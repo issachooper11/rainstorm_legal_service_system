@@ -14,20 +14,31 @@ router = APIRouter(prefix="/auth", tags=["认证"])
 
 # 注意这里改成了 OAuth2PasswordRequestForm
 @router.post("/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # 1. 根据用户名去数据库查用户（OAuth2 表单里的字段叫 username）
-    user = get_user_by_username(db, username=form_data.username)
+def login(
+        db: Session = Depends(get_db),
+        form_data: OAuth2PasswordRequestForm = Depends()
+):
+    # 1. 查找用户
+    user = db.query(User).filter(User.username == form_data.username).first()
 
-    # 2. 校验用户和密码
+    # 2. 校验账号密码是否正确
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="用户名或密码错误"
         )
 
-    # 3. 签发 Token
-    access_token = create_access_token(data={"sub": user.username})
+    # 3. 【关键新增】校验账号是否被停用
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="您的账号已被停用，请联系律所管理员"
+        )
 
+    # 4. 生成 Token 并返回
+    access_token = create_access_token(
+        data={"sub": user.username, "role": user.role}
+    )
     return {
         "access_token": access_token,
         "token_type": "bearer"
