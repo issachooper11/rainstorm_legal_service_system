@@ -21,7 +21,7 @@
           text-color="#1e293b"
           active-text-color="#0284c7"
       >
-        <!-- 团队管理：仅 1(董事长)、2(合伙人)、5(管理员)可见 -->
+        <!-- 团队管理 -->
         <el-sub-menu index="team" v-if="[1, 2, 5].includes(userInfo.role)">
           <template #title>
             <el-icon>
@@ -32,7 +32,7 @@
           <el-menu-item index="/dashboard/team-info">团队信息</el-menu-item>
         </el-sub-menu>
 
-        <!-- 市场管理：仅 1(董事长) 可见 -->
+        <!-- 市场管理 -->
         <el-sub-menu index="market" v-if="userInfo.role === 1">
           <template #title>
             <el-icon>
@@ -43,7 +43,7 @@
           <el-menu-item index="/dashboard/market-info">市场信息</el-menu-item>
         </el-sub-menu>
 
-        <!-- 案件管理(业务中心)：仅 1(董事长)、2(合伙人)、3(律师)、4(助理)可见，5(管理员)绝对不可见 -->
+        <!-- 案件管理 -->
         <el-sub-menu index="case" v-if="[1, 2, 3, 4].includes(userInfo.role)">
           <template #title>
             <el-icon>
@@ -69,7 +69,7 @@
             plain
             size="small"
             class="logout-btn"
-            @click="handleLogout"
+            @click="showLogoutDialog = true"
             :title="isCollapsed ? '退出登录' : ''"
         >
           <el-icon>
@@ -89,7 +89,6 @@
 
     <!-- 右侧主体内容区域 -->
     <div class="main-content">
-      <!-- 右侧顶部面板 -->
       <header class="top-navbar">
         <div class="nav-left">
           <span class="current-position">当前模块：{{ currentModuleName }}</span>
@@ -99,11 +98,21 @@
         </div>
       </header>
 
-      <!-- 主信息页 -->
       <main class="main-view">
         <router-view/>
       </main>
     </div>
+
+    <!-- 引用公共退出确认弹窗组件 -->
+    <ConfirmDialog
+        v-model:visible="showLogoutDialog"
+        title="安全提示"
+        message="确定要退出当前账号登录吗？"
+        confirm-text="确认退出"
+        confirm-button-type="danger"
+        @confirm="handleLogout"
+        @cancel="showLogoutDialog = false"
+    />
   </div>
 </template>
 
@@ -112,17 +121,21 @@ import {computed, reactive, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {ElMessage} from 'element-plus'
 import {User, TrendCharts, FolderOpened, ArrowLeft, ArrowRight, SwitchButton} from '@element-plus/icons-vue'
+import ConfirmDialog from "../components/ConfirmDialog.vue";
+// 引入公共弹窗组件
+
 
 const router = useRouter()
 const route = useRoute()
 
-// 侧边栏折叠状态
+// 控制退出弹窗显示
+const showLogoutDialog = ref(false)
+
 const isCollapsed = ref(false)
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
 }
 
-// 解析当前用户信息
 const userInfo = reactive({
   username: 'Admin',
   role: 3
@@ -138,7 +151,7 @@ try {
     }).join(''))
     const parsed = JSON.parse(jsonPayload)
     userInfo.username = parsed.sub || '用户'
-    userInfo.role = Number(parsed.role) || 3 // 确保解析出来的角色是数字
+    userInfo.role = Number(parsed.role) || 3
   }
 } catch (e) {
   console.error('解析Token失败', e)
@@ -147,27 +160,28 @@ try {
 const currentModuleName = computed(() => route.meta.title || '工作台')
 const activeMenu = computed(() => route.path)
 
-// 退出登录
+// 执行真正的退出登录逻辑
 const handleLogout = () => {
+  showLogoutDialog.value = false
   localStorage.removeItem('token')
   ElMessage.success('已安全退出登录')
   router.push('/login')
 }
 
-// 角色映射
 const getRoleText = (roleNum) => {
   const map = {
-    1: '董事长',
-    2: '合伙人',
-    3: '执业律师',
-    4: '行政助理',
-    5: '系统管理员'
+    1: '主任',
+    2: '高级合伙人',
+    3: '专职律师',
+    4: '律师助理',
+    5: '行政主管'
   }
   return map[roleNum] || '未知角色'
 }
 </script>
 
 <style scoped>
+/* 保持你原本的样式不变 */
 .dashboard-container {
   display: flex;
   height: 100vh;
@@ -247,7 +261,6 @@ const getRoleText = (roleNum) => {
   border-right: 3px solid #0284c7;
 }
 
-/* 侧边栏底部区域：用户信息与退出登录 */
 .sidebar-footer {
   padding: 12px 16px;
   border-top: 1px solid #f1f5f9;
@@ -303,7 +316,6 @@ const getRoleText = (roleNum) => {
   border-radius: 6px;
 }
 
-/* 折叠控制箭头 */
 .collapse-btn {
   position: absolute;
   top: 50%;
