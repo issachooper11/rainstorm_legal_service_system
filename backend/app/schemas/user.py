@@ -13,5 +13,5 @@ class UserLogin(BaseModel):
 class UserCreate(BaseModel):
     username: str = Field(..., description="用户名")
     password: str = Field(..., description="密码")
-    role: str = Field(..., description="角色: partner, lawyer, assistant, admin_staff")
     is_active: Optional[bool] = Field(True, description="是否激活")
+    role: int = Field(3, ge=1, le=5, description="角色: 1-主任, 2-合伙人, 3-律师, 4-助理, 5-系统管理员")

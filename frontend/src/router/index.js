@@ -5,6 +5,15 @@ import Dashboard from '../views/Dashboard.vue'
 import TeamInfo from '../views/team/TeamInfo.vue'
 import MarketInfo from '../views/market/MarketInfo.vue'
 
+// 定义数字角色常量
+const Role = {
+    CHAIRMAN: 1,  // 董事长
+    PARTNER: 2,   // 合伙人
+    LAWYER: 3,    // 律师
+    ASSISTANT: 4, // 助理
+    ADMINI: 5     // 管理员
+}
+
 const routes = [
     {
         path: '/',
@@ -20,25 +29,37 @@ const routes = [
         name: 'Dashboard',
         component: Dashboard,
         meta: {requiresAuth: true},
-        redirect: '/dashboard/case-management',
+        // 动态默认重定向：根据角色决定一登录跳到哪个默认页面
+        redirect: (to) => {
+            const role = Number(getUserRole())
+            if (role === Role.ADMINI) {
+                return '/dashboard/team-info' // 5 只能看团队信息
+            } else if (role === Role.LAWYER || role === Role.ASSISTANT) {
+                return '/dashboard/case-management' // 3, 4 只能看案件管理
+            }
+            return '/dashboard/case-management' // 1, 2 默认进案件管理
+        },
         children: [
             {
                 path: '/dashboard/team-info',
                 name: 'TeamInfo',
                 component: TeamInfo,
-                meta: {title: '团队信息', roles: ['partner']}
+                // 团队信息：1(董事长)、2(合伙人)、5(管理员)可看
+                meta: {title: '团队信息', roles: [Role.CHAIRMAN, Role.PARTNER, Role.ADMINI]}
             },
             {
                 path: '/dashboard/market-info',
                 name: 'MarketInfo',
                 component: MarketInfo,
-                meta: {title: '市场信息', roles: ['partner']}
+                // 市场信息：只有 1(董事长) 可看
+                meta: {title: '市场信息', roles: [Role.CHAIRMAN]}
             },
             {
                 path: '/dashboard/case-management',
                 name: 'CaseManagement',
                 component: () => import('../views/case/CaseManagement.vue'),
-                meta: {title: '案件管理', roles: ['lawyer', 'partner']}
+                // 案件管理：1(董事长)、2(合伙人)、3(律师)、4(助理)可看（管理员5不能看）
+                meta: {title: '案件管理', roles: [Role.CHAIRMAN, Role.PARTNER, Role.LAWYER, Role.ASSISTANT]}
             }
         ]
     }
@@ -65,7 +86,9 @@ function getUserRole() {
     }
 }
 
-// 全局前置守卫
+// 防连击弹窗锁
+let isShowingMessage = false
+
 router.beforeEach((to) => {
     const token = localStorage.getItem('token')
 
@@ -74,18 +97,29 @@ router.beforeEach((to) => {
     }
 
     if (to.meta.roles) {
-        const role = getUserRole()
+        const role = Number(getUserRole())
+        console.log('当前登录用户数字角色:', role)
 
         if (!to.meta.roles.includes(role)) {
-            // 安全触发提示
-            try {
-                ElMessage.error('权限不足：您的账号无权访问该模块')
-            } catch (err) {
-                console.error(err)
+            if (!isShowingMessage) {
+                isShowingMessage = true
+                try {
+                    ElMessage.error('权限不足：您的账号无权访问该模块')
+                } catch (err) {
+                    console.error(err)
+                }
+                setTimeout(() => {
+                    isShowingMessage = false
+                }, 1000)
             }
 
-            if (role === 'lawyer') {
-                return '/dashboard/case-management'
+            // 严格的越权拦截重定向：
+            if (role === Role.ADMINI) {
+                return '/dashboard/team-info' // 5 强制拉回团队信息
+            } else if (role === Role.LAWYER || role === Role.ASSISTANT) {
+                return '/dashboard/case-management' // 3, 4 强制拉回案件管理
+            } else if (role === Role.PARTNER) {
+                return '/dashboard/team-info' // 2 合伙人无权看市场时，踢回团队信息
             } else {
                 return '/login'
             }
@@ -95,7 +129,6 @@ router.beforeEach((to) => {
     return true
 })
 
-// 注册路由错误处理器，防止未捕获的导航异常崩溃
 router.onError((error) => {
     console.error('路由导航错误:', error)
 })

@@ -21,8 +21,8 @@
           text-color="#1e293b"
           active-text-color="#0284c7"
       >
-        <!-- 团队管理（仅合伙人可见） -->
-        <el-sub-menu index="team" v-if="userInfo.role === 'partner'">
+        <!-- 团队管理：仅 1(董事长)、2(合伙人)、5(管理员)可见 -->
+        <el-sub-menu index="team" v-if="[1, 2, 5].includes(userInfo.role)">
           <template #title>
             <el-icon>
               <User/>
@@ -32,8 +32,8 @@
           <el-menu-item index="/dashboard/team-info">团队信息</el-menu-item>
         </el-sub-menu>
 
-        <!-- 市场管理（仅合伙人可见） -->
-        <el-sub-menu index="market" v-if="userInfo.role === 'partner'">
+        <!-- 市场管理：仅 1(董事长) 可见 -->
+        <el-sub-menu index="market" v-if="userInfo.role === 1">
           <template #title>
             <el-icon>
               <TrendCharts/>
@@ -43,8 +43,8 @@
           <el-menu-item index="/dashboard/market-info">市场信息</el-menu-item>
         </el-sub-menu>
 
-        <!-- 案件管理（普通律师与合伙人均可见） -->
-        <el-sub-menu index="case">
+        <!-- 案件管理(业务中心)：仅 1(董事长)、2(合伙人)、3(律师)、4(助理)可见，5(管理员)绝对不可见 -->
+        <el-sub-menu index="case" v-if="[1, 2, 3, 4].includes(userInfo.role)">
           <template #title>
             <el-icon>
               <FolderOpened/>
@@ -61,7 +61,7 @@
           <div class="user-avatar">{{ userInfo.username.charAt(0).toUpperCase() }}</div>
           <div class="user-detail">
             <span class="username">{{ userInfo.username }}</span>
-            <span class="user-role">{{ userInfo.role === 'partner' ? '合伙人' : '普通员工' }}</span>
+            <span class="user-role">{{ getRoleText(userInfo.role) }}</span>
           </div>
         </div>
         <el-button
@@ -95,7 +95,7 @@
           <span class="current-position">当前模块：{{ currentModuleName }}</span>
         </div>
         <div class="nav-right">
-          <span class="welcome-text">欢迎您，{{ userInfo.username }} ({{ userInfo.role }})</span>
+          <span class="welcome-text">欢迎您，{{ userInfo.username }} ({{ getRoleText(userInfo.role) }})</span>
         </div>
       </header>
 
@@ -111,7 +111,7 @@
 import {computed, reactive, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {ElMessage} from 'element-plus'
-import {User, TrendCharts, ArrowLeft, ArrowRight, SwitchButton} from '@element-plus/icons-vue'
+import {User, TrendCharts, FolderOpened, ArrowLeft, ArrowRight, SwitchButton} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -125,7 +125,7 @@ const toggleSidebar = () => {
 // 解析当前用户信息
 const userInfo = reactive({
   username: 'Admin',
-  role: 'partner'
+  role: 3
 })
 
 try {
@@ -138,7 +138,7 @@ try {
     }).join(''))
     const parsed = JSON.parse(jsonPayload)
     userInfo.username = parsed.sub || '用户'
-    userInfo.role = parsed.role || 'staff'
+    userInfo.role = Number(parsed.role) || 3 // 确保解析出来的角色是数字
   }
 } catch (e) {
   console.error('解析Token失败', e)
@@ -152,6 +152,18 @@ const handleLogout = () => {
   localStorage.removeItem('token')
   ElMessage.success('已安全退出登录')
   router.push('/login')
+}
+
+// 角色映射
+const getRoleText = (roleNum) => {
+  const map = {
+    1: '董事长',
+    2: '合伙人',
+    3: '执业律师',
+    4: '行政助理',
+    5: '系统管理员'
+  }
+  return map[roleNum] || '未知角色'
 }
 </script>
 

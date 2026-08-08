@@ -217,4 +217,14 @@ const handleLogin = async () => {
   color: #cbd5e1;
   letter-spacing: 0.5px;
 }
+
+/* 覆盖浏览器自动填充账号密码时的背景色和文字颜色 */
+:deep(input:-webkit-autofill),
+:deep(input:-webkit-autofill:hover),
+:deep(input:-webkit-autofill:focus),
+:deep(input:-webkit-autofill:active) {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important; /* 把背景色强制设为白色 (#ffffff) 或你输入框原本的背景色 */
+  -webkit-text-fill-color: #1e293b !important; /* 强制文字颜色保持正常 */
+  transition: background-color 5000s ease-in-out 0s; /* 延缓背景色过渡，防止闪烁 */
+}
 </style>

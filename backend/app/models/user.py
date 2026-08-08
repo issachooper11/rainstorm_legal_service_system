@@ -10,5 +10,5 @@ class User(Base):
     hashed_password = Column(String, nullable=False)  # 绝不存明文密码
     is_active = Column(Boolean, server_default="true", nullable=False)
     # 增加角色字段
-    # chairman 主任、partner 合伙人、lawyer 执业律师、assistant 律师助理、admin_staff 行政
-    role = Column(String, server_default="lawyer", nullable=False)
+    # 角色: 1-主任(chairman), 2-合伙人(partner), 3-律师(lawyer), 4-助理(assistant), 5-系统管理员(admini)
+    role = Column(Integer, default=3, nullable=False, comment="用户角色类型(1-5)")
