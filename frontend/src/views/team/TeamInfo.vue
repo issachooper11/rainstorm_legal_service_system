@@ -76,6 +76,30 @@
             <span>{{ formatDate(row.created_at) }}</span>
           </template>
         </el-table-column>
+
+        <!-- 最后一列：操作选项 -->
+        <el-table-column label="操作" width="120" header-align="center" align="center">
+          <template #default="{ row }">
+            <el-button
+                type="danger"
+                size="small"
+                link
+                v-if="row.is_active"
+                @click="openStatusDialog(row, 'freeze')"
+            >
+              冻结
+            </el-button>
+            <el-button
+                type="success"
+                size="small"
+                link
+                v-else
+                @click="openStatusDialog(row, 'unfreeze')"
+            >
+              解冻
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
 
@@ -88,37 +112,6 @@
         class="custom-dialog"
     >
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px" status-icon>
-
-        <!-- 头像上传（支持本地预览与删除） -->
-        <!--        <el-form-item label="员工头像">-->
-        <!--          <div class="avatar-upload-wrapper">-->
-        <!--            <el-upload-->
-        <!--                class="avatar-uploader"-->
-        <!--                :show-file-list="false"-->
-        <!--                :http-request="customUploadAvatar"-->
-        <!--                :before-upload="beforeAvatarUpload"-->
-        <!--            >-->
-        <!--              <div v-if="form.avatar" class="avatar-preview-box" @mouseenter="showOverlay = true"-->
-        <!--                   @mouseleave="showOverlay = false">-->
-        <!--                <img :src="form.avatar" class="uploaded-avatar"/>-->
-        <!--                &lt;!&ndash; 悬浮操作层：预览或删除 &ndash;&gt;-->
-        <!--                <div v-if="showOverlay" class="avatar-overlay" @click.stop>-->
-        <!--                  <el-icon @click="handlePreview">-->
-        <!--                    <ZoomIn/>-->
-        <!--                  </el-icon>-->
-        <!--                  <el-icon @click="handleRemoveAvatar">-->
-        <!--                    <Delete/>-->
-        <!--                  </el-icon>-->
-        <!--                </div>-->
-        <!--              </div>-->
-        <!--              <el-icon v-else class="avatar-uploader-icon">-->
-        <!--                <Plus/>-->
-        <!--              </el-icon>-->
-        <!--            </el-upload>-->
-        <!--            <div class="upload-tip">支持 JPG/PNG/WEBP 格式，大小不超过 2MB</div>-->
-        <!--          </div>-->
-        <!--        </el-form-item>-->
-
         <!-- 登录账号 -->
         <el-form-item label="登录账号" prop="username">
           <el-input
@@ -188,6 +181,17 @@
       </template>
     </el-dialog>
 
+    <!-- 公共确认提示框组件：用于冻结与解冻操作 -->
+    <ConfirmDialog
+        v-model:visible="showStatusDialog"
+        title="安全提示"
+        :message="statusMessage"
+        :confirm-text="actionType === 'freeze' ? '确认冻结' : '确认解冻'"
+        :confirm-button-type="actionType === 'freeze' ? 'danger' : 'primary'"
+        @confirm="handleConfirmStatus"
+        @cancel="showStatusDialog = false"
+    />
+
     <!-- 头像大图预览弹窗 -->
     <el-image-viewer
         v-if="previewVisible"
@@ -201,7 +205,9 @@
 import {ref, reactive, onMounted, nextTick} from 'vue'
 import {ElMessage} from 'element-plus'
 import {Plus, ZoomIn, Delete} from '@element-plus/icons-vue'
-import {createUserApi, fetchUserListApi} from "../../api/user.js";
+import {createUserApi, fetchUserListApi, updateUserStatusApi} from "../../api/user.js";
+import ConfirmDialog from "../../components/ConfirmDialog.vue";
+// 假设你的公共组件放在这个路径，请根据实际情况调整引用
 
 
 const userList = ref([])
@@ -212,8 +218,12 @@ const dialogVisible = ref(false)
 const submitting = ref(false)
 const formRef = ref(null)
 
+// 状态修改弹窗控制
+const showStatusDialog = ref(false)
+const statusMessage = ref('')
+const currentActionRow = ref(null)
+const actionType = ref('freeze') // 'freeze' 冻结 或 'unfreeze' 解冻
 // 头像交互控制
-const showOverlay = ref(false)
 const previewVisible = ref(false)
 
 // 新增表单数据对象
@@ -225,7 +235,7 @@ const form = reactive({
   role: 3,
   phone: '',
   email: '',
-  avatar: '', // 对应数据库字段，存储图片链接或Base64
+  avatar: '',
   is_active: true
 })
 
@@ -253,43 +263,42 @@ const rules = reactive({
   role: [{required: true, message: '请选择职位角色', trigger: 'change'}]
 })
 
-// 自定义本地图片转 Base64 预览（或对接你的文件上传接口）
-const customUploadAvatar = (options) => {
-  const file = options.file
-  const reader = new FileReader()
-  reader.readAsDataURL(file)
-  reader.onload = (e) => {
-    form.avatar = e.target.result // 赋值后直接在表单中实时预览
-    ElMessage.success('头像加载成功')
+// 打开确认弹窗
+const openStatusDialog = (row, type) => {
+  currentActionRow.value = row
+  actionType.value = type
+  if (type === 'freeze') {
+    statusMessage.value = `确定要冻结用户 "${row.real_name || row.username}" 吗？冻结后该账号将无法登录。`
+  } else {
+    statusMessage.value = `确定要解冻用户 "${row.real_name || row.username}" 吗？解冻后该账号恢复正常登录。`
   }
+  showStatusDialog.value = true
 }
 
-// 头像上传前校验
-const beforeAvatarUpload = (file) => {
-  const isImage = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp'
-  const isLt2M = file.size / 1024 / 1024 < 2
+// 确认执行状态修改
+const handleConfirmStatus = async () => {
+  if (!currentActionRow.value) return
+  const targetRow = currentActionRow.value
+  const newStatus = actionType.value === 'unfreeze' // 解冻变 true，冻结变 false
 
-  if (!isImage) {
-    ElMessage.error('上传头像图片只能是 JPG/PNG/WEBP 格式!')
-    return false
+  try {
+    // 调用后端更新状态接口
+    const res = await updateUserStatusApi(targetRow.id, newStatus)
+
+    if (res && res.code === 200) {
+      // 更新本地状态
+      targetRow.is_active = newStatus
+      ElMessage.success(actionType.value === 'freeze' ? '已成功冻结该账号' : '已成功解冻该账号')
+    } else {
+      ElMessage.error(res?.detail || '操作失败')
+    }
+  } catch (error) {
+    console.error('状态更新请求异常', error)
+    ElMessage.error('网络异常，操作失败')
+  } finally {
+    showStatusDialog.value = false
+    currentActionRow.value = null
   }
-  if (!isLt2M) {
-    ElMessage.error('上传头像图片大小不能超过 2MB!')
-    return false
-  }
-  return true
-}
-
-// 预览大图
-const handlePreview = () => {
-  previewVisible.value = true
-}
-
-// 删除已选头像
-const handleRemoveAvatar = () => {
-  form.avatar = ''
-  showOverlay.value = false
-  ElMessage.info('已移除头像')
 }
 
 // 解析当前用户的角色
@@ -359,7 +368,7 @@ const submitForm = async () => {
           role: form.role,
           phone: form.phone,
           email: form.email,
-          avatar: form.avatar, // 对应数据库字段提交
+          avatar: form.avatar,
           is_active: form.is_active
         }
 
@@ -382,7 +391,7 @@ const submitForm = async () => {
 
 // 职位角色文本映射
 const getRoleText = (role) => {
-  const map = {1: ' 主任', 2: '高级合伙人', 3: '专职律师', 4: '律师助理', 5: '行政主管'}
+  const map = {1: '主任', 2: '高级合伙人', 3: '专职律师', 4: '律师助理', 5: '行政主管'}
   return map[role] || '未知'
 }
 
@@ -447,92 +456,7 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.user-name-box {
-  display: flex;
-  flex-direction: row;
-}
-
-.real-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
 .username {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-/* 头像上传与预览删除交互样式 */
-.avatar-upload-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.avatar-uploader :deep(.el-upload) {
-  border: 1px dashed #d9d9d9;
-  border-radius: 8px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: var(--el-transition-duration-fast);
-}
-
-.avatar-uploader :deep(.el-upload):hover {
-  border-color: var(--el-color-primary);
-}
-
-.avatar-uploader-icon {
-  font-size: 28px;
-  color: #8c939d;
-  width: 80px;
-  height: 80px;
-  text-align: center;
-  line-height: 80px;
-}
-
-.avatar-preview-box {
-  position: relative;
-  width: 80px;
-  height: 80px;
-}
-
-.uploaded-avatar {
-  width: 80px;
-  height: 80px;
-  display: block;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.avatar-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  color: #fff;
-  font-size: 18px;
-  border-radius: 8px;
-}
-
-.avatar-overlay .el-icon {
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.avatar-overlay .el-icon:hover {
-  transform: scale(1.2);
-  color: var(--el-color-primary-light-3);
-}
-
-.upload-tip {
   font-size: 12px;
   color: #94a3b8;
 }
@@ -542,9 +466,8 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* 让表格里的角色标签宽度统一，且文字居中 */
 .team-info-container :deep(.el-tag) {
-  width: 90px; /* 你可以根据实际视觉效果调整这个数值，比如 85px 或 90px */
-  justify-content: center; /* 让 Element Plus 标签内部的文字水平居中 */
+  width: 90px;
+  justify-content: center;
 }
 </style>

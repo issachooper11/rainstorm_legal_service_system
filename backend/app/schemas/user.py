@@ -23,3 +23,8 @@ class UserCreate(BaseModel):
     phone: Optional[str] = Field(None, description="电话号码")
     email: Optional[str] = Field(None, description="电子邮箱")
     avatar: Optional[str] = Field(None, description="头像URL")
+
+
+# 定义接收前端传递数据的 Pydantic 模型
+class UserStatusUpdate(BaseModel):
+    is_active: bool

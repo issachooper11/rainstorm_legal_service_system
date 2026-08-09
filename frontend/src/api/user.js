@@ -24,3 +24,14 @@ export const createUserApi = (userData) => {
         data: userData
     })
 }
+
+// 更新用户状态（冻结/解冻）
+export const updateUserStatusApi = (userId, isActive) => {
+    return request({
+        url: `/api/v1/users/${userId}/status`, // 正确解析出数字 ID，如 /users/5/status
+        method: 'patch',
+        data: {
+            is_active: isActive
+        }
+    })
+}

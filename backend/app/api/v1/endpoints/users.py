@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, require_roles
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserStatusUpdate
 from app.utils.security import get_password_hash
 
 router = APIRouter(prefix="/users", tags=["用户管理"])
@@ -95,5 +95,41 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
             "avatar": new_user.avatar,
             "created_at": new_user.created_at,
             "updated_at": new_user.updated_at
+        }
+    }
+
+
+@router.patch("/{user_id}/status")
+def update_user_status(
+        user_id: int,
+        status_data: UserStatusUpdate,
+        db: Session = Depends(get_db)
+):
+    """
+    更新用户账号状态（冻结/解冻）
+    """
+    # 1. 查找用户是否存在
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户不存在"
+        )
+
+    # 2. 修改状态
+    user.is_active = status_data.is_active
+
+    # 3. 提交到数据库
+    db.commit()
+    db.refresh(user)
+
+    action_text = "解冻" if status_data.is_active else "冻结"
+    return {
+        "code": 200,
+        "message": f"用户已成功{action_text}",
+        "data": {
+            "id": user.id,
+            "username": user.username,
+            "is_active": user.is_active
         }
     }
