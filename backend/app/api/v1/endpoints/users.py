@@ -9,14 +9,32 @@ from app.utils.security import get_password_hash
 router = APIRouter(prefix="/users", tags=["用户管理"])
 
 
-# 只有 role 为 "partner" 的合伙人才能访问这个接口
-@router.get("/", dependencies=[Depends(require_roles(["partner"]))])
+# 只有 role 为 "1, 2, 5" 才能访问这个接口
+@router.get("/", dependencies=[Depends(require_roles([1, 2, 5]))])
 def get_all_users(db: Session = Depends(get_db)):
+    # 查询所有用户
     users = db.query(User).all()
+
+    # 转换为更安全、结构清晰的字典列表（脱敏：过滤掉 hashed_password）
+    user_list = []
+    for u in users:
+        user_list.append({
+            "id": u.id,
+            "username": u.username,
+            "role": u.role,
+            "is_active": u.is_active,
+            "real_name": u.real_name,
+            "phone": u.phone,
+            "email": u.email,
+            "avatar": u.avatar,
+            "created_at": u.created_at,
+            "updated_at": u.updated_at
+        })
+
     return {
         "code": 200,
         "message": "获取用户列表成功",
-        "data": users
+        "data": user_list
     }
 
 

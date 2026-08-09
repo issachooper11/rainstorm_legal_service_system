@@ -1,6 +1,5 @@
 import axios from 'axios'
 import {ElMessage} from 'element-plus'
-
 // 创建统一的 axios 实例
 const service = axios.create({
     baseURL: 'http://127.0.0.1:8000', // 后端基础地址，以后换线上环境只需改这里
