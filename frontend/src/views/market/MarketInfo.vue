@@ -1,6 +1,25 @@
 <template>
-  <div class="market-container" style="padding: 20px;">
-    <!-- 1. 顶部搜索过滤表单 -->
+  <div class="market-container">
+    <!-- 1. 操作栏（一键导入） -->
+    <div class="action-bar"
+         style="margin-bottom: 15px; display: flex; justify-content: right; align-items: center;">
+      <div class="left-actions">
+        <el-upload
+            action="#"
+            :http-request="handleUploadExcel"
+            :show-file-list="false"
+            accept=".xlsx, .xls"
+        >
+          <el-button type="success">
+            <el-icon style="margin-right: 4px;">
+              <Upload/>
+            </el-icon>
+            一键导入 Excel
+          </el-button>
+        </el-upload>
+      </div>
+    </div>
+    <!-- 2. 顶部搜索过滤表单 -->
     <el-card class="filter-card" shadow="never" style="margin-bottom: 20px;">
       <el-form :inline="true" :model="queryParams" class="demo-form-inline">
         <el-form-item label="地区">
@@ -35,25 +54,6 @@
       </el-form>
     </el-card>
 
-    <!-- 2. 操作栏（一键导入） -->
-    <div class="action-bar"
-         style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-      <div class="left-actions">
-        <el-upload
-            action="#"
-            :http-request="handleUploadExcel"
-            :show-file-list="false"
-            accept=".xlsx, .xls"
-        >
-          <el-button type="success">
-            <el-icon style="margin-right: 4px;">
-              <Upload/>
-            </el-icon>
-            一键导入 Excel
-          </el-button>
-        </el-upload>
-      </div>
-    </div>
 
     <!-- 3. 数据表格区域（带排序监听） -->
     <el-card shadow="never">
@@ -64,34 +64,56 @@
           @sort-change="handleSortChange"
           border
       >
-        <el-table-column type="index" label="序号" width="60" align="center"/>
-        <el-table-column prop="region" label="地区" width="100"/>
-        <el-table-column prop="enterprise_name" label="企业名称" min-width="180" show-overflow-tooltip/>
-        <el-table-column prop="legal_representative" label="法定代表人" width="110"/>
-        <el-table-column prop="contact_info" label="联系方式" width="130" show-overflow-tooltip/>
-        <el-table-column prop="email" label="邮箱" width="150" show-overflow-tooltip/>
-
-        <!-- 成立日期排序 -->
-        <el-table-column prop="establishment_date" label="成立日期" width="120" sortable="custom"/>
-
-        <!-- 注册资本排序（纯数字展示，拼接万元） -->
-        <el-table-column prop="registered_capital" label="注册资本" width="130" sortable="custom">
-          <template #default="{ row }">
-            <span>{{ row.registered_capital ? row.registered_capital + ' 万元' : '暂无' }}</span>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="enterprise_type" label="企业类型" width="120"/>
-        <el-table-column prop="registered_address" label="注册地址" min-width="180" show-overflow-tooltip/>
-
+        <el-table-column type="index" label="序号" min-width="60" align="center" header-align="center"/>
         <!-- 企业类别 1-5 渲染标签 -->
-        <el-table-column prop="enterprise_category" label="类别" width="90" align="center">
+        <el-table-column prop="enterprise_category" label="类别" width="auto" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="getCategoryType(row.enterprise_category)">
               {{ getCategoryText(row.enterprise_category) }}
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="region" label="地区" width="60" align="center" header-align="center"/>
+        <el-table-column prop="enterprise_name" label="企业名称" min-width="250" show-overflow-tooltip align="center"
+                         header-align="center"/>
+        <el-table-column prop="legal_representative" label="法定代表人" width="100" align="center"
+                         header-align="center"/>
+        <el-table-column prop="contact_info" label="联系方式" min-width="120" align="center" header-align="center">
+          <template #default="scope">
+            <!-- 假设后端是用逗号分隔的，我们把它替换成换行，或者用 div 循环展示 -->
+            <div v-for="(item, index) in formatContacts(scope.row.contact_info)" :key="index">
+              {{ item }}
+            </div>
+          </template>
+        </el-table-column>
+            <el-table-column prop="email" label="邮箱" min-width="180" align="center" header-align="center">
+          <template #default="scope">
+            <!-- 假设后端是用逗号分隔的，我们把它替换成换行，或者用 div 循环展示 -->
+            <div v-for="(item, index) in formatContacts(scope.row.email)" :key="index">
+              {{ item }}
+            </div>
+          </template>
+        </el-table-column>
+
+
+        <!-- 成立日期排序 -->
+        <el-table-column prop="establishment_date" label="成立日期" width="110" sortable="custom" align="center"
+                         header-align="center"/>
+
+        <!-- 注册资本排序（纯数字展示，拼接万元） -->
+        <el-table-column prop="registered_capital" label="注册资本" width="140" sortable="custom" align="center"
+                         header-align="center">
+          <template #default="{ row }">
+            <span>{{ row.registered_capital ? row.registered_capital + ' 万元' : '暂无' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="enterprise_type" label="企业类型" min-width="150" align="center" show-overflow-tooltip
+                         header-align="center"/>
+        <el-table-column prop="registered_address" label="注册地址" min-width="200" show-overflow-tooltip
+                         header-align="center"/>
+
+
       </el-table>
 
       <!-- 4. 分页组件 (支持 5/10/25/50 条) -->
@@ -244,7 +266,12 @@ const getCategoryText = (category) => {
   }
   return map[category] || '未知'
 }
-
+// 如果是用逗号、顿号或空格分隔的，可以切成数组
+const formatContacts = (contactStr) => {
+  if (!contactStr) return []
+  // 按照逗号、中文逗号或空格进行切分（根据实际数据格式调整）
+  return contactStr.split(/[,，\s]+/)
+}
 // 页面挂载时请求数据
 onMounted(() => {
   fetchTableData()

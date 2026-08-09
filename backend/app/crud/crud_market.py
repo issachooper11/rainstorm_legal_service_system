@@ -18,7 +18,7 @@ class MarketCRUD:
             email: Optional[str] = None,
             enterprise_category: Optional[int] = None,
             sort_field: Optional[str] = None,  # 'registered_capital' 或 'establishment_date'
-            sort_order: Optional[str] = 'asc',  # 'asc' 或 'desc'
+            sort_order: Optional[str] = 'desc',  # 'asc' 或 'desc'
             page: int = 1,
             page_size: int = 10
     ):

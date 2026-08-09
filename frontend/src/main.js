@@ -10,7 +10,8 @@ import 'element-plus/dist/index.css'
 
 // 3. 引入 Element Plus 图标库（方便后续菜单和按钮用图标）
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-
+// 4. 引入 Element Plus 简体中文包
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 const app = createApp(App)
 
 // 注册所有图标
@@ -19,5 +20,7 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 }
 
 app.use(router)
-app.use(ElementPlus)
+app.use(ElementPlus, {
+    locale: zhCn,
+})
 app.mount('#app')
