@@ -1,99 +1,133 @@
 <template>
   <div class="market-container">
-    <!-- 1. 顶部操作栏（一键导入 + 表格视图控制工具图标） -->
-    <div class="action-bar"
-         style="margin-bottom: 15px; display: flex; justify-content: right; align-items: center;">
-      <div class="left-actions">
-        <el-upload
-            action="#"
-            :http-request="handleUploadExcel"
-            :show-file-list="false"
-            accept=".xlsx, .xls"
-        >
-          <el-button type="success">
-            <el-icon style="margin-right: 4px;">
-              <Upload/>
-            </el-icon>
-            一键导入 Excel
-          </el-button>
-        </el-upload>
-      </div>
-
-      <!-- 右侧：控制开关图标区（控制操作栏显隐、多选模式） -->
-      <div class="right-tools" style="display: flex; gap: 10px;margin-left: 15px;">
-        <!-- 切换多选状态的按钮（为后续批量操作做准备） -->
-        <el-tooltip :content="isMultiSelect ? '关闭多选模式' : '开启多选模式'" placement="top">
-          <el-button
-              :type="isMultiSelect ? 'primary' : 'default'"
-              circle
-              @click="isMultiSelect = !isMultiSelect"
-          >
-            <el-icon><Select/></el-icon>
-          </el-button>
-        </el-tooltip>
-
-        <!-- 切换“操作栏”显示/隐藏的开关按钮 -->
-        <el-tooltip :content="showOperationCol ? '隐藏操作列' : '显示操作列'" placement="top">
-          <el-button
-              :type="showOperationCol ? 'primary' : 'default'"
-              circle
-              @click="showOperationCol = !showOperationCol"
-          >
-            <el-icon>
-              <Operation/>
-            </el-icon>
-          </el-button>
-        </el-tooltip>
-      </div>
-    </div>
-
-    <!-- 2. 顶部搜索过滤表单 -->
+    <!-- 1. 顶部搜索与操作卡片 -->
     <el-card class="filter-card" shadow="never" style="margin-bottom: 20px;">
-      <el-form :inline="true" :model="queryParams" class="demo-form-inline">
-        <el-form-item label="地区">
-          <el-input v-model="queryParams.region" placeholder="请输入地区" clearable @clear="handleQuery"/>
-        </el-form-item>
-        <el-form-item label="名称">
-          <el-input v-model="queryParams.enterprise_name" placeholder="请输入企业名称" clearable @clear="handleQuery"/>
-        </el-form-item>
-        <el-form-item label="法代">
-          <el-input v-model="queryParams.legal_representative" placeholder="请输入法定代表人" clearable
-                    @clear="handleQuery"/>
-        </el-form-item>
-        <el-form-item label="电话">
-          <el-input v-model="queryParams.contact_info" placeholder="请输入联系方式" clearable @clear="handleQuery"/>
-        </el-form-item>
-        <el-form-item label="邮箱">
-          <el-input v-model="queryParams.email" placeholder="请输入邮箱" clearable @clear="handleQuery"/>
-        </el-form-item>
-        <el-form-item label="类别">
-          <el-select v-model="queryParams.enterprise_category" placeholder="全部类别" clearable style="width: 130px;"
-                     @change="handleQuery">
-            <el-option label="科技" :value="1"/>
-            <el-option label="商服" :value="2"/>
-            <el-option label="合同" :value="3"/>
-            <el-option label="劳动" :value="4"/>
-            <el-option label="综合" :value="5"/>
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleQuery">
-            <el-icon>
-              <Search/>
-            </el-icon>
-            <span>查询</span>
-          </el-button>
-          <el-button @click="resetQuery">
-            <el-icon>
-              <Refresh/>
-            </el-icon>
-            <span>重置</span>
-          </el-button>
-        </el-form-item>
+      <el-form :model="queryParams" class="search-form">
+        <!-- 第一行输入框：地区、名称、法代 -->
+        <div class="form-row">
+          <el-form-item label="地区" class="form-item-custom">
+            <el-input v-model="queryParams.region" placeholder="请输入地区" clearable @clear="handleQuery"/>
+          </el-form-item>
+          <el-form-item label="名称" class="form-item-custom">
+            <el-input v-model="queryParams.enterprise_name" placeholder="请输入企业名称" clearable
+                      @clear="handleQuery"/>
+          </el-form-item>
+          <el-form-item label="法代" class="form-item-custom">
+            <el-input v-model="queryParams.legal_representative" placeholder="请输入法定代表人" clearable
+                      @clear="handleQuery"/>
+          </el-form-item>
+        </div>
+
+        <!-- 第二行输入框：电话、邮箱、类别 -->
+        <div class="form-row" style="margin-top: 12px;">
+          <el-form-item label="电话" class="form-item-custom">
+            <el-input v-model="queryParams.contact_info" placeholder="请输入联系方式" clearable @clear="handleQuery"/>
+          </el-form-item>
+          <el-form-item label="邮箱" class="form-item-custom">
+            <el-input v-model="queryParams.email" placeholder="请输入邮箱" clearable @clear="handleQuery"/>
+          </el-form-item>
+          <el-form-item label="类别" class="form-item-custom">
+            <el-select v-model="queryParams.enterprise_category" placeholder="全部类别" clearable style="width: 100%;"
+                       @change="handleQuery">
+              <el-option label="科技" :value="1"/>
+              <el-option label="商服" :value="2"/>
+              <el-option label="合同" :value="3"/>
+              <el-option label="劳动" :value="4"/>
+              <el-option label="综合" :value="5"/>
+            </el-select>
+          </el-form-item>
+        </div>
+
+        <!-- 第三行：按钮操作区（整体右对齐，等间距） -->
+        <div class="form-row action-row">
+          <div class="action-right">
+            <!-- 开启多选时显示的批量操作按钮 -->
+            <template v-if="isMultiSelect">
+              <el-button type="danger" plain @click="handleBatchDelete">
+                <el-icon>
+                  <Delete/>
+                </el-icon>
+                <span>批量删除</span>
+              </el-button>
+              <el-button type="warning" plain @click="handleBatchEmail">
+                <el-icon>
+                  <Message/>
+                </el-icon>
+                <span>批量发送邮件</span>
+              </el-button>
+              <el-button type="success" plain @click="handleBatchSms">
+                <el-icon>
+                  <Iphone/>
+                </el-icon>
+                <span>批量发送短信</span>
+              </el-button>
+              <!-- 批量按钮与基础按钮之间的分割线 -->
+              <el-divider direction="vertical" class="action-divider"/>
+            </template>
+
+            <!-- 查询与重置 -->
+            <el-button type="primary" @click="handleQuery">
+              <el-icon>
+                <Search/>
+              </el-icon>
+              <span>查询</span>
+            </el-button>
+            <el-button @click="resetQuery">
+              <el-icon>
+                <Refresh/>
+              </el-icon>
+              <span>重置</span>
+            </el-button>
+
+            <!-- 分割线 -->
+            <el-divider direction="vertical" class="action-divider"/>
+
+            <!-- 上传 Excel 图标按钮 -->
+            <el-tooltip content="一键导入 Excel" placement="top">
+              <el-upload
+                  action="#"
+                  :http-request="handleUploadExcel"
+                  :show-file-list="false"
+                  accept=".xlsx, .xls"
+                  class="inline-upload"
+              >
+                <el-button type="success" circle>
+                  <el-icon>
+                    <Upload/>
+                  </el-icon>
+                </el-button>
+              </el-upload>
+            </el-tooltip>
+
+            <!-- 多选模式开关 -->
+            <el-tooltip :content="isMultiSelect ? '关闭多选模式' : '开启多选模式'" placement="top">
+              <el-button
+                  :type="isMultiSelect ? 'primary' : 'default'"
+                  circle
+                  @click="toggleMultiSelect"
+              >
+                <el-icon><Select/></el-icon>
+              </el-button>
+            </el-tooltip>
+
+            <!-- 操作列显隐开关 -->
+            <el-tooltip :content="showOperationCol ? '隐藏操作列' : '显示操作列'" placement="top">
+              <el-button
+                  :type="showOperationCol ? 'primary' : 'default'"
+                  circle
+                  @click="showOperationCol = !showOperationCol"
+              >
+                <el-icon>
+                  <Operation/>
+                </el-icon>
+              </el-button>
+            </el-tooltip>
+          </div>
+        </div>
       </el-form>
     </el-card>
 
-    <!-- 3. 数据表格区域 -->
+    <!-- 2. 数据表格区域 -->
     <el-card shadow="never">
       <el-table
           :data="tableData"
@@ -103,7 +137,7 @@
           @selection-change="handleSelectionChange"
           border
       >
-        <!-- 多选列：由右上角 isMultiSelect 开关控制显示/隐藏 -->
+        <!-- 多选列 -->
         <el-table-column
             v-if="isMultiSelect"
             type="selection"
@@ -164,24 +198,24 @@
         <el-table-column prop="registered_address" label="注册地址" min-width="200" show-overflow-tooltip
                          header-align="center"/>
 
-        <!-- 操作列：由右上角 showOperationCol 开关控制显示/隐藏 -->
+        <!-- 操作列 -->
         <el-table-column
             v-if="showOperationCol"
             label="操作"
-            width="120"
+            width="100"
             fixed="right"
             align="center"
             header-align="center"
         >
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleOpenTrace(row)">
-              跟进记录
+              记录
             </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- 4. 分页组件 -->
+      <!-- 3. 分页组件 -->
       <div class="pagination-container" style="margin-top: 20px; display: flex; justify-content: flex-end;">
         <el-pagination
             v-model:current-page="queryParams.page"
@@ -195,7 +229,7 @@
       </div>
     </el-card>
 
-    <!-- 5. 跟进记录侧边抽屉 (Drawer) -->
+    <!-- 4. 跟进记录侧边抽屉 (Drawer) -->
     <el-drawer
         v-model="traceDrawerVisible"
         :title="`跟进记录 - ${currentEnterprise.enterprise_name || ''}`"
@@ -218,7 +252,7 @@
             <el-input
                 v-model="traceForm.content"
                 type="textarea"
-                rows="3"
+                :rows="3"
                 placeholder="请输入本次沟通详情、客户反馈等..."
             />
           </el-form-item>
@@ -235,7 +269,6 @@
           暂无跟进记录
         </div>
 
-        <!-- 新增：带滚动条的容器 -->
         <div v-else class="timeline-scroll-container">
           <el-timeline>
             <el-timeline-item
@@ -251,7 +284,6 @@
                   </el-tag>
                   <span style="font-size: 12px; color: #909399;">跟进人：{{ item.creator_name }}</span>
                 </div>
-                <!-- 文本支持长内容折行展示 -->
                 <p style="margin: 5px 0 0 0; white-space: pre-wrap; word-break: break-all; font-size: 14px; color: #606266;">
                   {{ item.content }}
                 </p>
@@ -266,43 +298,84 @@
 
 <script setup>
 import {ref, reactive, onMounted} from 'vue'
-import {ElMessage} from 'element-plus'
-// 引入图标：Upload(上传), Operation(控制操作栏显示隐藏), Select(控制多选模式)
-import {Upload, Operation, Select} from '@element-plus/icons-vue'
-import {getMarketListApi, importMarketExcelApi} from "../../api/market.js";
-import {getEnterpriseTracesApi, createEnterpriseTraceApi} from "../../api/trace.js";
-// 格式化时间函数：把 "2026-08-09T19:25:36.895572" 转为 "2026-08-09 19:25:36"
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {Upload, Operation, Select, Search, Refresh, Delete, Message, Iphone} from '@element-plus/icons-vue'
+import {getMarketListApi, importMarketExcelApi} from "../../api/market.js"
+import {getEnterpriseTracesApi, createEnterpriseTraceApi} from "../../api/trace.js"
+
+// 时间格式化函数
 const formatDate = (isoString) => {
   if (!isoString) return ''
-  // 方法 A：纯字符串截取和替换（最轻量，不需要引入任何库）
   return isoString.replace('T', ' ').split('.')[0]
 }
-// --- 表格基本状态 ---
+
+// 表格状态
 const loading = ref(false)
 const tableData = ref([])
 const total = ref(0)
 
-// --- 控制开关状态（新增） ---
-const showOperationCol = ref(true) // 控制“操作栏”列是否显示，默认显示
-const isMultiSelect = ref(false)     // 控制是否开启表格多选模式，默认关闭
-const selectedRows = ref([])         // 存储多选勾选中的行数据（为后续批量操作预留）
+// 功能开关与多选
+const showOperationCol = ref(true)
+const isMultiSelect = ref(false)
+const selectedRows = ref([])
 
-// 多选框选中项变化回调
 const handleSelectionChange = (val) => {
   selectedRows.value = val
 }
 
-// --- 跟进记录抽屉相关状态 ---
+const toggleMultiSelect = () => {
+  isMultiSelect.value = !isMultiSelect.value
+  if (!isMultiSelect.value) {
+    selectedRows.value = [] // 关闭多选模式时清空已选
+  }
+}
+
+// --- 批量处理占位方法 ---
+const handleBatchDelete = () => {
+  if (selectedRows.value.length === 0) {
+    ElMessage.warning('请先勾选需要批量删除的项')
+    return
+  }
+  ElMessageBox.confirm(`确认要删除已选中的 ${selectedRows.value.length} 项数据吗？`, '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    console.log('待删除的项：', selectedRows.value)
+    ElMessage.info('已触发批量删除，请在此处接入 API')
+  }).catch(() => {
+  })
+}
+
+const handleBatchEmail = () => {
+  if (selectedRows.value.length === 0) {
+    ElMessage.warning('请先勾选需要发送邮件的项')
+    return
+  }
+  console.log('待发送邮件的项：', selectedRows.value)
+  ElMessage.info(`已选择 ${selectedRows.value.length} 项，请在此处接入批量发送邮件 API`)
+}
+
+const handleBatchSms = () => {
+  if (selectedRows.value.length === 0) {
+    ElMessage.warning('请先勾选需要发送短信的项')
+    return
+  }
+  console.log('待发送短信的项：', selectedRows.value)
+  ElMessage.info(`已选择 ${selectedRows.value.length} 项，请在此处接入批量发送短信 API`)
+}
+
+// 抽屉状态
 const traceDrawerVisible = ref(false)
-const currentEnterprise = ref({}) // 当前正在查看跟进的企业
-const traceList = ref([])         // 历史跟进列表
+const currentEnterprise = ref({})
+const traceList = ref([])
 const traceSubmitting = ref(false)
 const traceForm = reactive({
-  trace_type: 2, // 默认选中 2-电话
+  trace_type: 2,
   content: ''
 })
 
-// --- 查询与分页参数 ---
+// 查询参数
 const queryParams = reactive({
   region: '',
   enterprise_name: '',
@@ -316,7 +389,6 @@ const queryParams = reactive({
   page_size: 10
 })
 
-// 获取市场列表数据
 const fetchTableData = async () => {
   loading.value = true
   try {
@@ -333,13 +405,11 @@ const fetchTableData = async () => {
   }
 }
 
-// 点击查询
 const handleQuery = () => {
   queryParams.page = 1
   fetchTableData()
 }
 
-// 重置查询
 const resetQuery = () => {
   queryParams.region = ''
   queryParams.enterprise_name = ''
@@ -354,7 +424,6 @@ const resetQuery = () => {
   fetchTableData()
 }
 
-// 监听表格排序变化
 const handleSortChange = ({prop, order}) => {
   if (!order) {
     queryParams.sort_field = ''
@@ -366,29 +435,24 @@ const handleSortChange = ({prop, order}) => {
   fetchTableData()
 }
 
-// 分页大小改变
 const handleSizeChange = (val) => {
   queryParams.page_size = val
   fetchTableData()
 }
 
-// 翻页
 const handleCurrentChange = (val) => {
   queryParams.page = val
   fetchTableData()
 }
 
-// 打开跟进抽屉
 const handleOpenTrace = async (row) => {
   currentEnterprise.value = row
   traceForm.content = ''
   traceForm.trace_type = 2
   traceDrawerVisible.value = true
-  // 加载该企业的历史跟进
   await fetchTraces(row.id)
 }
 
-// 获取某企业的跟进列表
 const fetchTraces = async (enterpriseId) => {
   try {
     const res = await getEnterpriseTracesApi(enterpriseId)
@@ -401,7 +465,6 @@ const fetchTraces = async (enterpriseId) => {
   }
 }
 
-// 提交新跟进
 const submitTrace = async () => {
   if (!traceForm.content.trim()) {
     ElMessage.warning('请输入跟进详细内容')
@@ -415,7 +478,6 @@ const submitTrace = async () => {
     })
     ElMessage.success('跟进记录添加成功')
     traceForm.content = ''
-    // 重新拉取该企业的跟进列表刷新时间轴
     await fetchTraces(currentEnterprise.value.id)
   } catch (error) {
     console.error('添加跟进失败', error)
@@ -425,7 +487,6 @@ const submitTrace = async () => {
   }
 }
 
-// 自定义 Excel 上传逻辑
 const handleUploadExcel = async (options) => {
   const file = options.file
   try {
@@ -448,7 +509,6 @@ const handleUploadExcel = async (options) => {
   }
 }
 
-// --- 辅助样式映射函数 ---
 const getCategoryType = (category) => {
   const map = {1: 'success', 2: 'warning', 3: 'primary', 4: 'danger', 5: 'info'}
   return map[category] || 'info'
@@ -474,20 +534,74 @@ const formatContacts = (contactStr) => {
   return contactStr.split(/[,，\s]+/)
 }
 
-// 页面挂载时请求数据
 onMounted(() => {
   fetchTableData()
 })
 </script>
+
 <style scoped>
-/* 历史跟进记录滚动容器样式 */
-.timeline-scroll-container {
-  max-height: 50vh; /* 动态自适应抽屉高度，预留顶部表单位置 */
-  overflow-y: auto; /* 内容过多时自动出现垂直滚动条 */
-  padding-right: 8px; /* 防止滚动条紧贴文字 */
+/* 整个 Form 容器 */
+.search-form {
+  width: 100%;
 }
 
-/* 自定义美化滚动条（可选） */
+/* 每一行输入框容器：3 列平分，间距 16px */
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+/* 第三行操作栏专用样式：靠右对齐 */
+.action-row {
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+/* 统一控制每个输入框/下拉框同宽与对齐 */
+.form-item-custom {
+  flex: 1;
+  margin: 0 !important;
+}
+
+.form-item-custom :deep(.el-form-item__content) {
+  width: 100%;
+}
+
+.form-item-custom :deep(.el-input),
+.form-item-custom :deep(.el-select) {
+  width: 100% !important;
+}
+
+/* 按钮组：靠右排布、统一 12px 间距 */
+.action-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-right .el-button {
+  margin: 0 !important; /* 清除默认外边距 */
+}
+
+.action-divider {
+  margin: 0 4px;
+  height: 18px;
+}
+
+.inline-upload {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 抽屉滚动条 */
+.timeline-scroll-container {
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
 .timeline-scroll-container::-webkit-scrollbar {
   width: 6px;
 }
