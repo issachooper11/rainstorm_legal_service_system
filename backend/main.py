@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.v1.endpoints import auth, users
+from app.api.v1.endpoints import auth, users, market
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Rainstorm Legal Service System")
@@ -7,6 +7,7 @@ app = FastAPI(title="Rainstorm Legal Service System")
 # 挂载认证路由，并加上统一前缀 /api/v1
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
+app.include_router(market.router, prefix="/api/v1")
 
 app.add_middleware(
     CORSMiddleware,
