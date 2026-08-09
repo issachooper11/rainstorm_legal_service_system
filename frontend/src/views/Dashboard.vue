@@ -29,7 +29,12 @@
             </el-icon>
             <span>团队管理</span>
           </template>
-          <el-menu-item index="/dashboard/team-info">团队信息</el-menu-item>
+          <el-menu-item index="/dashboard/team-info">
+            <el-icon>
+              <Tickets/>
+            </el-icon>
+            <span>团队信息</span>
+          </el-menu-item>
         </el-sub-menu>
 
         <!-- 市场管理 -->
@@ -40,7 +45,11 @@
             </el-icon>
             <span>市场管理</span>
           </template>
-          <el-menu-item index="/dashboard/market-info">市场信息</el-menu-item>
+          <el-menu-item index="/dashboard/market-info">
+            <el-icon>
+              <Tickets/>
+            </el-icon>
+            <span>市场信息</span></el-menu-item>
         </el-sub-menu>
 
         <!-- 案件管理 -->
@@ -51,7 +60,11 @@
             </el-icon>
             <span>业务中心</span>
           </template>
-          <el-menu-item index="/dashboard/case-management">案件管理</el-menu-item>
+          <el-menu-item index="/dashboard/case-management">
+            <el-icon>
+              <Tickets/>
+            </el-icon>
+            <span>案件管理</span></el-menu-item>
         </el-sub-menu>
       </el-menu>
 

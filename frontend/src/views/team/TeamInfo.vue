@@ -41,7 +41,7 @@
         <!-- 角色标签 -->
         <el-table-column prop="role" label="级别" width="auto" header-align="center" align="center">
           <template #default="{ row }">
-            <el-tag :type="getRoleTagType(row.role)" size="medium" effect="plain">
+            <el-tag :type="getRoleTagType(row.role)" size="default" effect="plain">
               {{ getRoleText(row.role) }}
             </el-tag>
           </template>
@@ -64,7 +64,7 @@
         <!-- 状态 -->
         <el-table-column prop="is_active" label="账号状态" width="auto" header-align="center" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.is_active ? 'success' : 'danger'" size="medium">
+            <el-tag :type="row.is_active ? 'success' : 'danger'" size="default">
               {{ row.is_active ? '正常' : '已禁用' }}
             </el-tag>
           </template>
