@@ -53,19 +53,20 @@
         <el-form-item label="地区">
           <el-input v-model="queryParams.region" placeholder="请输入地区" clearable @clear="handleQuery"/>
         </el-form-item>
-        <el-form-item label="企业名称">
+        <el-form-item label="名称">
           <el-input v-model="queryParams.enterprise_name" placeholder="请输入企业名称" clearable @clear="handleQuery"/>
         </el-form-item>
-        <el-form-item label="法定代表人">
-          <el-input v-model="queryParams.legal_representative" placeholder="请输入法人" clearable @clear="handleQuery"/>
+        <el-form-item label="法代">
+          <el-input v-model="queryParams.legal_representative" placeholder="请输入法定代表人" clearable
+                    @clear="handleQuery"/>
         </el-form-item>
-        <el-form-item label="联系方式">
+        <el-form-item label="电话">
           <el-input v-model="queryParams.contact_info" placeholder="请输入联系方式" clearable @clear="handleQuery"/>
         </el-form-item>
         <el-form-item label="邮箱">
           <el-input v-model="queryParams.email" placeholder="请输入邮箱" clearable @clear="handleQuery"/>
         </el-form-item>
-        <el-form-item label="企业类别">
+        <el-form-item label="类别">
           <el-select v-model="queryParams.enterprise_category" placeholder="全部类别" clearable style="width: 130px;"
                      @change="handleQuery">
             <el-option label="科技" :value="1"/>
@@ -76,8 +77,18 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handleQuery">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
+          <el-button type="primary" @click="handleQuery">
+            <el-icon>
+              <Search/>
+            </el-icon>
+            <span>查询</span>
+          </el-button>
+          <el-button @click="resetQuery">
+            <el-icon>
+              <Refresh/>
+            </el-icon>
+            <span>重置</span>
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
