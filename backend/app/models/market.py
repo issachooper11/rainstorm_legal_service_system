@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Float
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -23,3 +24,5 @@ class MarketEnterprise(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间")
+    # 加上这行，与 EnterpriseTrace 模型中的 back_populates 对应
+    traces = relationship("EnterpriseTrace", back_populates="enterprise", cascade="all, delete-orphan")
