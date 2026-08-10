@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI
 from app.api.v1.endpoints import auth, users, market, trace
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,3 +23,8 @@ app.add_middleware(
 @app.get("/")
 def root():
     return {"message": "Welcome to Rainstorm Legal Service System API"}
+
+
+if __name__ == "__main__":
+    # 💡 host 必须是 "0.0.0.0"，允许外部流量进入
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
