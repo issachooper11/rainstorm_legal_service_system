@@ -18,7 +18,7 @@
           </el-form-item>
         </div>
 
-        <!-- 第二行输入框：电话、邮箱、类别、意向筛选、签约筛选 -->
+        <!-- 第二行输入框：电话、邮箱 -->
         <div class="form-row" style="margin-top: 12px;">
           <el-form-item label="联系方式" class="form-item-custom">
             <el-input v-model="queryParams.contact_info" placeholder="请输入联系方式" clearable @clear="handleQuery"/>
@@ -26,10 +26,9 @@
           <el-form-item label="邮箱" class="form-item-custom">
             <el-input v-model="queryParams.email" placeholder="请输入邮箱" clearable @clear="handleQuery"/>
           </el-form-item>
-
-
         </div>
-        <!-- 第三行 -->
+
+        <!-- 第三行：类别、意向、签约筛选 -->
         <div class="form-row" style="margin-top: 12px;">
           <el-form-item label="企业类别" class="form-item-custom">
             <el-select v-model="queryParams.enterprise_category" placeholder="全部类别" clearable style="width: 100%;"
@@ -41,7 +40,6 @@
               <el-option label="综合" :value="5"/>
             </el-select>
           </el-form-item>
-          <!-- 🆕 新增：意向客户筛选 -->
           <el-form-item label="是否为意向客户" class="form-item-custom">
             <el-select v-model="queryParams.is_intention" placeholder="全部" clearable style="width: 100%;"
                        @change="handleQuery">
@@ -49,7 +47,6 @@
               <el-option label="否" :value="false"/>
             </el-select>
           </el-form-item>
-          <!-- 🆕 新增：签约客户筛选 -->
           <el-form-item label="是否签约" class="form-item-custom">
             <el-select v-model="queryParams.is_signed" placeholder="全部" clearable style="width: 100%;"
                        @change="handleQuery">
@@ -58,10 +55,11 @@
             </el-select>
           </el-form-item>
         </div>
+
         <!-- 第四行：按钮操作区 -->
         <div class="form-row action-row">
           <div class="action-right">
-            <!-- 开启多选时显示的批量操作按钮 -->
+            <!-- 批量操作 -->
             <template v-if="isMultiSelect">
               <el-button type="danger" plain @click="handleBatchDelete">
                 <el-icon>
@@ -119,22 +117,15 @@
 
             <!-- 多选模式开关 -->
             <el-tooltip :content="isMultiSelect ? '关闭多选模式' : '开启多选模式'" placement="top">
-              <el-button
-                  :type="isMultiSelect ? 'primary' : 'default'"
-                  circle
-                  @click="toggleMultiSelect"
-              >
+              <el-button :type="isMultiSelect ? 'primary' : 'default'" circle @click="toggleMultiSelect">
                 <el-icon><Select/></el-icon>
               </el-button>
             </el-tooltip>
 
             <!-- 操作列显隐开关 -->
             <el-tooltip :content="showOperationCol ? '隐藏操作列' : '显示操作列'" placement="top">
-              <el-button
-                  :type="showOperationCol ? 'primary' : 'default'"
-                  circle
-                  @click="showOperationCol = !showOperationCol"
-              >
+              <el-button :type="showOperationCol ? 'primary' : 'default'" circle
+                         @click="showOperationCol = !showOperationCol">
                 <el-icon>
                   <Operation/>
                 </el-icon>
@@ -148,22 +139,14 @@
     <!-- 2. 数据表格区域 -->
     <el-card shadow="never">
       <el-table
+          v-loading="loading"
           :data="tableData"
           style="width: 100%"
-          v-loading="loading"
+          border
           @sort-change="handleSortChange"
           @selection-change="handleSelectionChange"
-          border
       >
-        <!-- 多选列 -->
-        <el-table-column
-            v-if="isMultiSelect"
-            type="selection"
-            width="55"
-            align="center"
-            header-align="center"
-        />
-
+        <el-table-column v-if="isMultiSelect" type="selection" width="55" align="center" header-align="center"/>
         <el-table-column type="index" label="序号" min-width="60" align="center" header-align="center"/>
 
         <!-- 企业类别 -->
@@ -175,7 +158,7 @@
           </template>
         </el-table-column>
 
-        <!-- 🆕 意向客户状态 -->
+        <!-- 意向客户状态 -->
         <el-table-column label="意向" width="80" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="row.is_intention ? 'success' : 'info'" size="small">
@@ -184,7 +167,7 @@
           </template>
         </el-table-column>
 
-        <!-- 🆕 签约状态 -->
+        <!-- 签约状态 -->
         <el-table-column label="签约" width="80" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="row.is_signed ? 'success' : 'danger'" size="small">
@@ -199,19 +182,17 @@
         <el-table-column prop="legal_representative" label="法定代表人" width="100" align="center"
                          header-align="center"/>
 
-        <!-- 🆕 联系方式列（JSON 结构展示，格式：待查询（13644152586）：待发送） -->
-        <!-- 🆕 联系方式列 -->
+        <!-- 联系方式列 -->
         <el-table-column label="联系方式" min-width="260" align="center" header-align="center">
           <template #default="{ row }">
             <div v-if="row.contact_info && row.contact_info.length" class="cell-list-container">
               <div v-for="(item, index) in row.contact_info" :key="index" class="json-cell-item">
-                <!-- 状态可点击 -->
                 <span
                     :class="['status-text', item.is_sms_sent ? 'is-sent' : 'is-pending']"
                     @click="handleSendMsg('sms', row, item, index)"
                 >
-          【{{ item.is_sms_sent ? '已发送' : '待发送' }}】
-        </span>
+                  【{{ item.is_sms_sent ? '已发送' : '待发送' }}】
+                </span>
                 <span>{{ item.phone }}：{{ item.name || '待查询' }}</span>
               </div>
             </div>
@@ -219,18 +200,17 @@
           </template>
         </el-table-column>
 
-        <!-- 🆕 邮箱列 -->
+        <!-- 邮箱列 -->
         <el-table-column label="邮箱" min-width="240" align="center" header-align="center">
           <template #default="{ row }">
             <div v-if="row.email && row.email.length" class="cell-list-container">
               <div v-for="(item, index) in row.email" :key="index" class="json-cell-item">
-                <!-- 状态可点击 -->
                 <span
                     :class="['status-text', item.is_sent ? 'is-sent' : 'is-pending']"
                     @click="handleSendMsg('email', row, item, index)"
                 >
-          【{{ item.is_sent ? '已发送' : '待发送' }}】
-        </span>
+                  【{{ item.is_sent ? '已发送' : '待发送' }}】
+                </span>
                 <span>{{ item.email }}</span>
               </div>
             </div>
@@ -255,7 +235,7 @@
         <el-table-column prop="registered_address" label="注册地址" min-width="180" align="left" show-overflow-tooltip
                          header-align="center"/>
 
-        <!-- 🆕 操作列（增加 修改 与 删除） -->
+        <!-- 操作列 -->
         <el-table-column
             v-if="showOperationCol"
             label="操作"
@@ -286,11 +266,10 @@
       </div>
     </el-card>
 
-    <!-- 4. 修改企业信息对话框 (Edit Dialog) -->
+    <!-- 4. 修改企业信息对话框 -->
     <el-dialog v-model="editDialogVisible" title="修改企业信息" width="650px" destroy-on-close>
       <el-form :model="editForm" label-width="100px">
         <el-form-item label="企业名称">
-          <!-- 🔒 设置 disabled 禁改企业名称 -->
           <el-input v-model="editForm.enterprise_name" disabled placeholder="企业名称不可修改"/>
         </el-form-item>
         <el-form-item label="地区">
@@ -313,7 +292,6 @@
             <el-checkbox v-model="item.is_sms_sent" style="margin-right: 8px;">已发短信</el-checkbox>
             <el-button type="danger" circle icon="Delete" size="small" @click="removeContact(index)"/>
           </div>
-          <!-- 增加容器包裹以保证与上方输入框对齐 -->
           <div class="add-btn-wrapper">
             <el-button type="primary" plain size="small" icon="Plus" @click="addContact">添加号码</el-button>
           </div>
@@ -326,7 +304,6 @@
             <el-checkbox v-model="item.is_sent" style="margin-right: 8px;">已发邮件</el-checkbox>
             <el-button type="danger" circle icon="Delete" size="small" @click="removeEmail(index)"/>
           </div>
-          <!-- 增加容器包裹以保证与上方输入框对齐 -->
           <div class="add-btn-wrapper">
             <el-button type="primary" plain size="small" icon="Plus" @click="addEmail">添加邮箱</el-button>
           </div>
@@ -339,7 +316,7 @@
       </template>
     </el-dialog>
 
-    <!-- 5. 跟进记录侧边抽屉 (Drawer) -->
+    <!-- 5. 跟进记录侧边抽屉 -->
     <el-drawer
         v-model="traceDrawerVisible"
         :title="`跟进记录 - ${currentEnterprise.enterprise_name || ''}`"
@@ -372,77 +349,174 @@
       </div>
 
       <div class="trace-timeline-box">
-
         <h4 style="margin-bottom: 15px; color: #303133;">历史跟进轨迹</h4>
-
         <div v-if="traceList.length === 0" style="color: #909399; text-align: center; padding: 20px 0;">
-
           暂无跟进记录
-
         </div>
-
         <div v-else class="timeline-scroll-container">
-
           <el-timeline>
-
             <el-timeline-item
-
                 v-for="item in traceList"
-
                 :key="item.id"
-
                 :timestamp="formatDate(item.created_at)"
-
                 placement="top"
-
             >
-
               <el-card shadow="hover" style="margin-bottom: 10px;">
-
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-
                   <el-tag size="small" :type="getTraceTypeTag(item.trace_type)">
-
                     {{ getTraceTypeText(item.trace_type) }}
-
                   </el-tag>
-
                   <span style="font-size: 12px; color: #909399;">跟进人：{{ item.creator_name }}</span>
-
                 </div>
-
                 <p style="margin: 5px 0 0 0; white-space: pre-wrap; word-break: break-all; font-size: 14px; color: #606266;">
-
                   {{ item.content }}
-
                 </p>
-
               </el-card>
-
             </el-timeline-item>
-
           </el-timeline>
-
         </div>
-
       </div>
     </el-drawer>
+
+    <!-- 6. 短信发送弹窗 -->
+    <el-dialog
+        v-model="smsDialogVisible"
+        title="发送营销短信"
+        width="500px"
+        destroy-on-close
+    >
+      <el-form :model="smsForm" label-width="90px">
+        <el-form-item label="接收手机">
+          <el-input v-model="smsForm.phone" disabled/>
+        </el-form-item>
+        <el-form-item label="接收人">
+          <el-input v-model="smsForm.name" disabled/>
+        </el-form-item>
+        <el-form-item label="企业类别">
+          <el-select
+              v-model="smsForm.category"
+              placeholder="请选择类别"
+              style="width: 100%;"
+              @change="handleSmsCategoryChange"
+          >
+            <el-option label="科技" :value="1"/>
+            <el-option label="商服" :value="2"/>
+            <el-option label="合同" :value="3"/>
+            <el-option label="劳动" :value="4"/>
+            <el-option label="综合" :value="5"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="短信内容">
+          <el-input
+              v-model="smsForm.content"
+              type="textarea"
+              :rows="4"
+              readonly
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="smsDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="smsSending" @click="submitSendSms">确定发送</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 7. 邮箱发送弹窗（已去除海报附件行） -->
+    <el-dialog
+        v-model="emailDialogVisible"
+        title="发送营销邮件"
+        width="580px"
+        destroy-on-close
+    >
+      <el-form :model="emailForm" label-width="90px">
+        <el-form-item label="接收邮箱">
+          <el-input v-model="emailForm.email" disabled/>
+        </el-form-item>
+        <el-form-item label="企业类别">
+          <el-select
+              v-model="emailForm.category"
+              placeholder="请选择企业类别"
+              style="width: 100%;"
+              @change="handleEmailCategoryChange"
+          >
+            <el-option label="科技" :value="1"/>
+            <el-option label="商服" :value="2"/>
+            <el-option label="合同" :value="3"/>
+            <el-option label="劳动" :value="4"/>
+            <el-option label="综合" :value="5"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="邮件主题">
+          <el-input v-model="emailForm.subject" readonly/>
+        </el-form-item>
+        <el-form-item label="正文预览">
+          <el-input
+              v-model="emailForm.body"
+              type="textarea"
+              :rows="6"
+              readonly
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="emailDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="emailSending" @click="submitSendEmail">确定发送</el-button>
+      </template>
+      </el-dialog>
   </div>
 </template>
 
 <script setup>
 import {ref, reactive, onMounted} from 'vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import {Upload, Operation, Select, Search, Refresh, Delete, Message, Iphone} from '@element-plus/icons-vue'
-import {getMarketListApi, importMarketExcelApi, updateMarketApi, deleteMarketApi} from "../../api/market.js"
+import {Upload, Operation, Select, Search, Refresh, Delete, Message, Iphone, Plus} from '@element-plus/icons-vue'
+import {
+  getMarketListApi,
+  importMarketExcelApi,
+  updateMarketApi,
+  deleteMarketApi,
+  sendMarketEmailApi
+} from "../../api/market.js"
 import {getEnterpriseTracesApi, createEnterpriseTraceApi} from "../../api/trace.js"
+
+// ---------------- 1. 营销模板数据常量定义 ----------------
+const EMAIL_TEMPLATES = {
+  1: {
+    subject: "【法律体检】企业核心技术保密、股权结构与研发合规排查",
+    body: `尊敬的 {company_name}：\n\n您好！\n\n科技企业的核心资产在于技术与团队。在新《公司法》实施与技术快速迭代背景下，高新企业极易面临以下隐患：\n1. 核心技术与知产泄密：技术人员离职带走源码或算法，保密条款与竞业限制不完善致维权困难；\n2. 股权及出资隐患：合伙人带股离职缺乏退出机制，且需应对注册资本 5 年实缴新规；\n3. 研发交付争议：合同未明确交付与验收标准，导致服务尾款长期拖欠。\n\n我们常法团队推出主动型《企业法律健康体检计划》，从“公司治理、合同管理、劳动用工、财税合规、专项知产”五大维度帮您前置排查隐患。\n\n专属服务：回复本邮件或添加微信，免费领取《企业合规全周期防护手册》并可得到 1 份看得懂、拿得走的《企业法律健康诊断报告》。\n\n北京觅理律师事务所 常年法律顾问团队\n联系人：王律师\n咨询电话：15810733362（微信同手机）`
+  },
+  2: {
+    subject: "【法律体检】企业合同防坑与财税合规排查",
+    body: `尊敬的 {company_name}：\n\n您好！\n\n商业服务中，企业的高频风险集中在合同履约与账款回收。在日常经营中，您是否面临以下痛点：\n1. 坏账与回款难题：服务成果已交付，客户却借故拖欠尾款；\n2. 履约边界不清：合同未设置阶段性验收与沟通留痕，导致客户无休止要求免费改稿；\n3. 财税与佣金风险：公私户混用、无票支出或发票开具时点不合规诱发补税风险。\n\n最频繁的交易行为，往往隐藏着最大的法律盲区。我们常法团队推行《企业法律健康体检计划》，帮助商服企业筑牢合同防线、规范财务内控。\n\n专属服务：回复本邮件或添加微信，免费领取《企业合规全周期防护手册》并可得到 1 份看得懂、拿得走的《企业法律健康诊断报告》。\n\n北京觅理律师事务所 常年法律顾问团队\n联系人：王律师\n咨询电话：15810733362（微信同手机）`
+  },
+  3: {
+    subject: "【法律体检】企业合同订立漏洞与合规排查",
+    body: `尊敬的 {company_name}：\n\n您好！\n\n企业的生命线在于“产品流动”与“资金安全”。在上下游交易中，极易产生以下盲区：\n1. 合同订立漏洞：未明确“质量检验期”与交付标准，买方因质量瑕疵拒付货款；\n2. 履约证据缺失：微信、邮件等沟通记录未规范归档，事后举证困难；\n3. 进项发票风险：发票开具不及时或真实性核查不到位，引发税务稽查风险。\n\n我们常法团队推出主动型《企业法律健康体检计划》，帮您厘清交易边界、建立标准化合同管理体系。\n\n专属服务：回复本邮件或添加微信，免费领取《企业合规全周期防护手册》并可得到 1 份看得懂、拿得走的《企业法律健康诊断报告》。\n\n北京觅理律师事务所 常年法律顾问团队\n联系人：王律师\n咨询电话：15810733362（微信同手机）`
+  },
+  4: {
+    subject: "【法律体检】企业劳动用工合规、员工社保等合规排查",
+    body: `尊敬的 {company_name}：\n\n您好！\n\n劳动用工是企业高频法律风险的重灾区。需要重点关注的是社保新规：任何“自愿放弃社保”协议一律无效，未依法缴纳社保的，员工可随时解约并索赔经济补偿金！企业需严防以下“重灾区”：\n1. 劳动合同与社保：未满一个月签合同面临双倍工资，社保未全员及时足额缴纳；\n2. 试用期辞退：缺乏明确录用标准与考核证据，试用期辞退被索赔 2N 赔偿金。\n\n最好的风控永远是事前预防。我们常法团队为您提供主动型《企业法律健康体检计划》，筑牢用工防火墙。\n\n专属服务：回复本邮件或添加微信，免费领取《企业合规全周期防护手册》并可得到 1 份看得懂、拿得走的《企业法律健康诊断报告》。\n\n北京觅理律师事务所 常年法律顾问团队\n联系人：王律师\n咨询电话：15810733362（微信同手机）`
+  },
+  5: {
+    subject: "【法律体检】企业日常经营合规：新《公司法》应对、合同与用工风险全维度排查",
+    body: `尊敬的 {company_name}：\n\n您好！\n\n新《公司法》实施已满两年，存量企业合规整改集中释放，注册资本 5 年实缴到位、股东出资加速到期等制度是年度关注重点。企业在日常经营中，极易在“公司治理、合同管理、劳动用工、财税合规”四大基础领域踩坑：\n1. 章程照搬模板、公司公私户混用、发票开具不合规；\n2. 劳动合同未及时续签、加班费未依法留痕；\n3. 交易未签书面合同或公章管理不规范等。\n\n常法团队升级推出主动型《企业法律健康体检计划》，用最小的前置投入，为您出具看得懂、拿得走的《企业法律健康诊断报告》。\n\n专属服务：回复本邮件或添加微信，免费领取《企业合规全周期防护手册》并可得到 1 份看得懂、拿得走的《企业法律健康诊断报告》。\n\n北京觅理律师事务所 常年法律顾问团队\n联系人：王律师\n咨询电话：15810733362（微信同手机）`
+  }
+}
+
+const SMS_TEMPLATES = {
+  1: "【北京觅理律所】{company_name}您好！企业极易因技术泄密或股权无退出机制引发纠纷。加微信免费领取《企业合规全周期防护手册》及体检报告体验。联系人：王律师 15810733362（微信同号）。退订回TD",
+  2: "【北京觅理律所】{company_name}您好！企业常面临尾款难追或无限改稿困扰。加微信免费领取《企业合规全周期防护手册》及体检报告体验。联系人：王律师 15810733362（微信同号）。退订回TD",
+  3: "【北京觅理律所】{company_name}您好！企业常遇的交货争议与账期拖延，加微信免费领取《企业合规全周期防护手册》及体检报告体验。联系人：王律师 15810733362（微信同号）。退订回TD",
+  4: "【北京觅理律所】{company_name}您好！注意“自愿放弃社保协议无效”新规！试用期辞退无证据易被索赔2N。加微信免费领取《企业合规防护手册》及诊断体验。联系人：王律师 15810733362（微信同号）。退订回TD",
+  5: "【北京觅理律所】{company_name}您好！新《公司法》要求注册资本5年内实缴。常法团队提供全维度体检，加微信免费领取《合规防护手册》及诊断体验。联系人：王律师 15810733362（微信同号）。退订回TD"
+}
 
 const formatDate = (isoString) => {
   if (!isoString) return ''
   return isoString.replace('T', ' ').split('.')[0]
 }
 
-// 表格与查询参数
+// ---------------- 2. 状态与变量定义 ----------------
 const loading = ref(false)
 const tableData = ref([])
 const total = ref(0)
@@ -486,7 +560,139 @@ const traceList = ref([])
 const traceSubmitting = ref(false)
 const traceForm = reactive({trace_type: 2, content: ''})
 
-// 数据获取与筛选
+// 发送目标与弹窗状态
+const currentTargetRow = ref(null)
+const currentTargetItem = ref(null)
+
+// 短信弹窗
+const smsDialogVisible = ref(false)
+const smsSending = ref(false)
+const smsForm = reactive({
+  phone: '',
+  name: '',
+  category: 5,
+  content: ''
+})
+
+// 邮箱弹窗
+const emailDialogVisible = ref(false)
+const emailSending = ref(false)
+const emailForm = reactive({
+  email: '',
+  category: 5,
+  subject: '',
+  body: ''
+})
+
+// ---------------- 3. 方法分发入口 ----------------
+const handleSendMsg = (type, row, item) => {
+  currentTargetRow.value = row
+  currentTargetItem.value = item
+
+  if (type === 'sms') {
+    if (item.is_sms_sent) {
+      ElMessage.info(`短信已发送给：${item.phone}`)
+      return
+    }
+    smsForm.phone = item.phone
+    smsForm.name = item.name || '待查询'
+    smsForm.category = row.enterprise_category || 5
+
+    handleSmsCategoryChange(smsForm.category)
+    smsDialogVisible.value = true
+
+  } else if (type === 'email') {
+    if (item.is_sent) {
+      ElMessage.info(`邮件已发送给：${item.email}`)
+      return
+    }
+    emailForm.email = item.email
+    emailForm.category = row.enterprise_category || 5
+
+    handleEmailCategoryChange(emailForm.category)
+    emailDialogVisible.value = true
+  }
+}
+
+// ---------------- 4. 短信弹窗逻辑 ----------------
+const handleSmsCategoryChange = (catVal) => {
+  const companyName = currentTargetRow.value?.enterprise_name || ''
+  const tpl = SMS_TEMPLATES[catVal] || SMS_TEMPLATES[5]
+  smsForm.content = tpl.replace('{company_name}', companyName)
+}
+
+const submitSendSms = async () => {
+  smsSending.value = true
+  try {
+    // 拷贝并修改状态
+    const updatedContactInfo = JSON.parse(JSON.stringify(currentTargetRow.value.contact_info || []))
+    const target = updatedContactInfo.find(c => c.phone === currentTargetItem.value.phone)
+    if (target) {
+      target.is_sms_sent = true
+    }
+
+    // 调用后端更新数据接口持久化
+    await updateMarketApi(currentTargetRow.value.id, {
+      ...currentTargetRow.value,
+      contact_info: updatedContactInfo
+    })
+
+    // 同步本地视图
+    currentTargetItem.value.is_sms_sent = true
+    ElMessage.success('短信发送成功，状态已更新！')
+    smsDialogVisible.value = false
+  } catch (error) {
+    console.error('发送短信失败:', error)
+    ElMessage.error('短信发送失败')
+  } finally {
+    smsSending.value = false
+  }
+}
+
+// ---------------- 5. 邮箱弹窗逻辑 ----------------
+const handleEmailCategoryChange = (catVal) => {
+  const companyName = currentTargetRow.value?.enterprise_name || ''
+  const tpl = EMAIL_TEMPLATES[catVal] || EMAIL_TEMPLATES[5]
+
+  emailForm.subject = tpl.subject
+  emailForm.body = tpl.body.replace('{company_name}', companyName)
+}
+
+const submitSendEmail = async () => {
+  emailSending.value = true
+  try {
+    // ✅ 核心修复：对应后端 SendEmailReq Pydantic 模型的字段名
+    await sendMarketEmailApi({
+      enterprise_id: Number(currentTargetRow.value.id),
+      email: String(emailForm.email).trim(),
+      subject: emailForm.subject,
+      body: emailForm.body
+    })
+
+    // 状态更新为已发送并写入数据库
+    const updatedEmailList = JSON.parse(JSON.stringify(currentTargetRow.value.email || []))
+    const target = updatedEmailList.find(e => e.email === currentTargetItem.value.email)
+    if (target) {
+      target.is_sent = true
+    }
+
+    await updateMarketApi(currentTargetRow.value.id, {
+      ...currentTargetRow.value,
+      email: updatedEmailList
+    })
+
+    currentTargetItem.value.is_sent = true
+    ElMessage.success('邮件已成功发送！')
+    emailDialogVisible.value = false
+  } catch (error) {
+    console.error('发送邮件失败:', error)
+    ElMessage.error(error.response?.data?.detail?.[0]?.msg || '邮件发送失败，请检查数据格式')
+  } finally {
+    emailSending.value = false
+  }
+}
+
+// ---------------- 6. 数据表格与筛选逻辑 ----------------
 const fetchTableData = async () => {
   loading.value = true
   try {
@@ -524,7 +730,7 @@ const resetQuery = () => {
   fetchTableData()
 }
 
-// 🆕 修改逻辑
+// ---------------- 7. 编辑企业逻辑 ----------------
 const handleEdit = (row) => {
   currentEditId.value = row.id
   editForm.enterprise_name = row.enterprise_name
@@ -532,7 +738,6 @@ const handleEdit = (row) => {
   editForm.legal_representative = row.legal_representative
   editForm.is_intention = row.is_intention || false
   editForm.is_signed = row.is_signed || false
-  // 深拷贝 JSON 数组，防止直接污染表格数据
   editForm.contact_info = JSON.parse(JSON.stringify(row.contact_info || []))
   editForm.email = JSON.parse(JSON.stringify(row.email || []))
   editDialogVisible.value = true
@@ -569,7 +774,7 @@ const submitEdit = async () => {
   }
 }
 
-// 🆕 单条删除逻辑
+// ---------------- 8. 删除与批量处理 ----------------
 const handleDelete = (row) => {
   ElMessageBox.confirm(`确认要删除企业【${row.enterprise_name}】吗？`, '警告', {
     confirmButtonText: '确定',
@@ -587,10 +792,10 @@ const handleDelete = (row) => {
   })
 }
 
-// 批量选择与表格排序操作
 const handleSelectionChange = (val) => {
   selectedRows.value = val
 }
+
 const toggleMultiSelect = () => {
   isMultiSelect.value = !isMultiSelect.value
   if (!isMultiSelect.value) selectedRows.value = []
@@ -620,15 +825,16 @@ const handleSortChange = ({prop, order}) => {
 }
 
 const handleSizeChange = (val) => {
-  queryParams.page_size = val;
-  fetchTableData()
-}
-const handleCurrentChange = (val) => {
-  queryParams.page = val;
+  queryParams.page_size = val
   fetchTableData()
 }
 
-// 跟进抽屉逻辑
+const handleCurrentChange = (val) => {
+  queryParams.page = val
+  fetchTableData()
+}
+
+// ---------------- 9. 跟进记录逻辑 ----------------
 const handleOpenTrace = async (row) => {
   currentEnterprise.value = row
   traceForm.content = ''
@@ -664,6 +870,7 @@ const submitTrace = async () => {
   }
 }
 
+// ---------------- 10. Excel 导入与工具函数 ----------------
 const handleUploadExcel = async (options) => {
   try {
     const res = await importMarketExcelApi(options.file)
@@ -675,69 +882,7 @@ const handleUploadExcel = async (options) => {
     ElMessage.error('Excel 导入失败')
   }
 }
-/**
- * 处理单个发送逻辑（短信/邮箱）
- * @param {string} type - 发送类型：'sms' | 'email'
- * @param {object} row - 当前行企业数据
- * @param {object} item - 当前选中的联系方式或邮箱对象
- * @param {number} index - 当前项在数组中的索引
- */
-const handleSendMsg = (type, row, item, index) => {
-  const isSms = type === 'sms'
-  const isSent = isSms ? item.is_sms_sent : item.is_sent
-  const targetName = isSms ? `${item.name || '客户'}（${item.phone}）` : item.email
-  const typeText = isSms ? '短信' : '邮件'
 
-  // 如果已经是已发送状态，提示无需重复发送（也可以根据需求允许重新发送）
-  if (isSent) {
-    ElMessage.info(`该${typeText}已发送过给 ${targetName}`)
-    return
-  }
-
-  // 弹出确认弹窗
-  ElMessageBox.confirm(
-      `确认要向 ${targetName} 发送${typeText}吗？`,
-      '发送确认',
-      {
-        confirmButtonText: '立即发送',
-        cancelButtonText: '取消',
-        type: 'warning',
-        beforeClose: async (action, instance, done) => {
-          if (action === 'confirm') {
-            instance.confirmButtonLoading = true
-            instance.confirmButtonText = '发送中...'
-            try {
-              // ----------------------------------------------------
-              // 🚀 【预留位置】：后续在这里调用真实的发送 API
-              // 例如：await sendSmsApi({ enterprise_id: row.id, phone: item.phone })
-              // ----------------------------------------------------
-
-              // 模拟延迟（对接接口后可删掉 setTimeout）
-              await new Promise((resolve) => setTimeout(resolve, 800))
-
-              // 修改前端数据状态
-              if (isSms) {
-                item.is_sms_sent = true
-              } else {
-                item.is_sent = true
-              }
-
-              ElMessage.success(`${typeText}发送成功！`)
-              done()
-            } catch (error) {
-              ElMessage.error(`${typeText}发送失败，请重试`)
-            } finally {
-              instance.confirmButtonLoading = false
-            }
-          } else {
-            done()
-          }
-        }
-      }
-  ).catch(() => {
-    // 点击取消逻辑（无需处理）
-  })
-}
 const getCategoryType = (c) => ({1: 'success', 2: 'warning', 3: 'primary', 4: 'danger', 5: 'info'}[c] || 'info')
 const getCategoryText = (c) => ({1: '科技', 2: '商服', 3: '合同', 4: '劳动', 5: '综合'}[c] || '未知')
 const getTraceTypeTag = (t) => ({1: 'info', 2: 'success', 3: 'warning', 4: 'danger'}[t] || '')
@@ -774,7 +919,8 @@ onMounted(() => {
   width: 100%;
 }
 
-.form-item-custom :deep(.el-input), .form-item-custom :deep(.el-select) {
+.form-item-custom :deep(.el-input),
+.form-item-custom :deep(.el-select) {
   width: 100% !important;
 }
 
@@ -798,7 +944,6 @@ onMounted(() => {
   align-items: center;
 }
 
-/* 🆕 单元格多行 JSON 数据展示 */
 .cell-list-container {
   display: flex;
   flex-direction: column;
@@ -811,14 +956,21 @@ onMounted(() => {
   align-items: center;
   justify-content: left;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.6;
 }
 
-/* 🆕 修改弹窗动态行间距 */
 .edit-row-item {
   display: flex;
   align-items: center;
   margin-bottom: 8px;
+  width: 100%;
+}
+
+.add-btn-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 4px;
 }
 
 .timeline-scroll-container {
@@ -836,23 +988,6 @@ onMounted(() => {
   border-radius: 3px;
 }
 
-/* 修改弹窗动态行样式 */
-.edit-row-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-  width: 100%;
-}
-
-/* 按钮包裹层，保证与输入框左对齐 */
-.add-btn-wrapper {
-  width: 100%;
-  display: flex;
-  justify-content: flex-start;
-  margin-top: 4px;
-}
-
-/* 状态文字基础样式 */
 .status-text {
   cursor: pointer;
   font-weight: 500;
@@ -865,22 +1000,11 @@ onMounted(() => {
   opacity: 0.8;
 }
 
-/* 待发送：橘红/黄色，提醒感强 */
 .status-text.is-pending {
   color: #e6a23c;
 }
 
-/* 已发送：绿色，安全完成感 */
 .status-text.is-sent {
   color: #67c23a;
-}
-
-/* 单元格布局微调 */
-.json-cell-item {
-  display: flex;
-  align-items: center;
-  justify-content: left;
-  font-size: 13px;
-  line-height: 1.6;
 }
 </style>

@@ -39,3 +39,12 @@ export const deleteMarketApi = (enterpriseId) => {
         method: 'delete'
     })
 }
+
+// 5.单个邮件发送接口
+export function sendMarketEmailApi(data) {
+    return request({
+        url: '/api/v1/market/email/send', // 对应 /api/v1/market/email/send
+        method: 'post',
+        data
+    })
+}

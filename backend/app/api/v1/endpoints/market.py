@@ -1,6 +1,15 @@
+import smtplib
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import formataddr
+
 from fastapi import APIRouter, Depends, File, UploadFile, Query, HTTPException, status
+from pydantic import BaseModel, EmailStr, ConfigDict
 from sqlalchemy.orm import Session
 from typing import Optional
+
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.market import MarketEnterprise
 from app.services.market import MarketService
@@ -12,6 +21,125 @@ from app.schemas.market import (
 )
 
 router = APIRouter(prefix="/market", tags=["市场信息管理"])
+
+
+# 定义请求 Body 数据结构
+class SendEmailReq(BaseModel):
+    enterprise_id: int
+    email: EmailStr
+    subject: str
+    body: str
+    # 允许忽略前端传入的多余字段（忽略 extra 属性）
+    model_config = ConfigDict(extra='ignore')
+
+
+@router.post("/email/send")
+def send_marketing_email(req: SendEmailReq):
+    """
+    发送营销邮件接口
+    """
+    if not settings.SMTP_USER or not settings.SMTP_PASS:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="邮件服务未配置，请检查 .env 中的 SMTP_USER 与 SMTP_PASS"
+        )
+
+    try:
+        # 1. 创建 related 类型的邮件主体（用于正文内嵌图片）
+        msg = MIMEMultipart('related')
+
+        # 解决发件人防诈骗警告：formataddr 会自动对发件人中文名进行 RFC 2047 编码
+        msg['From'] = formataddr((settings.SENDER_NAME, settings.SMTP_USER))
+        msg['To'] = req.email
+        msg['Subject'] = req.subject  # Python email 模块会自动处理 Header 编码
+
+        # 2. 组装 HTML 正文
+        formatted_body = req.body.replace('\n', '<br>')
+        html_content = f"""
+        <!DOCTYPE html>
+        <html lang="zh-CN">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>邮件正文</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          <!-- 最外层卡片容器 (使用 table 保证所有邮件客户端居中) -->
+          <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f5f7; padding: 20px 0;">
+            <tr>
+              <td align="center">
+                <!-- 正文主卡片 -->
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; border: 1px solid #eaedf1; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                  <tr>
+                    <td style="padding: 30px 25px;">
+                      
+                      <!-- 邮件主要文案内容 -->
+                      <div style="font-size: 15px; color: #2c3e50; line-height: 1.7; word-break: break-word;">
+                        {formatted_body}
+                      </div>
+
+                      <!-- 分割线 -->
+                      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 25px 0 20px 0;">
+                        <tr>
+                          <td style="border-top: 1px solid #eef2f7;"></td>
+                        </tr>
+                      </table>
+
+                      <!-- 海报图片展示区 -->
+                      <div style="text-align: center;">
+                        <p style="font-size: 12px; color: #909399; margin: 0 0 12px 0; font-weight: normal;">
+                          --- 随信附带《企业法律健康体检清单》---
+                        </p>
+                        <img src="cid:poster_img_cid" alt="企业法律健康体检清单" width="550" style="width: 100%; max-width: 550px; height: auto; border-radius: 6px; display: block; margin: 0 auto; border: 0;" />
+                      </div>
+
+                    </td>
+                  </tr>
+                </table>
+                <!-- 卡片结束 -->
+                
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+        """
+
+        # 直接挂载 HTML 文本内容
+        msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+
+        # 3. 挂载海报图片（使用 config.py 定义的 Path 对象）
+        poster_path = settings.CHECKLIST_POSTER_PATH
+
+        if poster_path.is_file():
+            with open(poster_path, 'rb') as f:
+                img = MIMEImage(f.read())
+                # 指定 Content-ID 供 HTML 中的 <img src="cid:poster_img_cid"> 引用
+                img.add_header('Content-ID', '<poster_img_cid>')
+                # 兼容中文名的附件头配置
+                img.add_header(
+                    'Content-Disposition',
+                    'inline',
+                    filename=('utf-8', '', poster_path.name)
+                )
+                msg.attach(img)
+            print(f"✅ 成功加载并挂载海报图片: {poster_path.name}")
+        else:
+            print(f"⚠️ [警告] 海报图片未找到，预计路径: {poster_path.resolve()}")
+
+        # 4. 发送邮件
+        with smtplib.SMTP_SSL(settings.SMTP_SERVER, settings.SMTP_PORT) as server:
+            server.login(settings.SMTP_USER, settings.SMTP_PASS)
+            server.sendmail(settings.SMTP_USER, [req.email], msg.as_string())
+
+        return {"code": 200, "message": "邮件发送成功"}
+
+    except Exception as e:
+        print(f"❌ 发送邮件报错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"邮件发送失败: {str(e)}"
+        )
 
 
 @router.post("/import")
