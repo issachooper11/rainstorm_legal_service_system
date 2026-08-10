@@ -14,11 +14,28 @@ export const importMarketExcelApi = (file) => {
     })
 }
 
-// 2. 获取市场信息列表（支持多条件查询、分页、排序）
+// 2. 获取市场信息列表（支持多条件查询、分页、排序、意向/签约筛选）
 export const getMarketListApi = (params) => {
     return request({
         url: '/api/v1/market/list',
         method: 'get',
-        params // params 包含：region, enterprise_name, legal_representative, contact_info, email, enterprise_category, sort_field, sort_order, page, page_size
+        params // params 包含：region, enterprise_name, legal_representative, contact_info, email, enterprise_category, is_intention, is_signed, sort_field, sort_order, page, page_size
+    })
+}
+
+// 3. 修改/更新企业信息接口
+export const updateMarketApi = (enterpriseId, data) => {
+    return request({
+        url: `/api/v1/market/${enterpriseId}`,
+        method: 'put',
+        data
+    })
+}
+
+// 4. 删除单个企业信息接口
+export const deleteMarketApi = (enterpriseId) => {
+    return request({
+        url: `/api/v1/market/${enterpriseId}`,
+        method: 'delete'
     })
 }
