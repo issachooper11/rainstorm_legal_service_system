@@ -278,7 +278,15 @@
         <el-form-item label="法定代表人">
           <el-input v-model="editForm.legal_representative" disabled placeholder="请输入法定代表人"/>
         </el-form-item>
-
+        <el-form-item label="企业类别">
+          <el-select v-model="editForm.enterprise_category" placeholder="请选择企业类别" style="width: 100%;">
+            <el-option label="科技" :value="1"/>
+            <el-option label="商服" :value="2"/>
+            <el-option label="合同" :value="3"/>
+            <el-option label="劳动" :value="4"/>
+            <el-option label="综合" :value="5"/>
+          </el-select>
+        </el-form-item>
         <el-form-item label="意向/签约">
           <el-checkbox v-model="editForm.is_intention">设为意向客户</el-checkbox>
           <el-checkbox v-model="editForm.is_signed">已签约客户</el-checkbox>
@@ -611,6 +619,7 @@ const editForm = reactive({
   enterprise_name: '',
   region: '',
   legal_representative: '',
+  enterprise_category: 5,
   is_intention: false,
   is_signed: false,
   contact_info: [],
@@ -800,6 +809,7 @@ const handleEdit = (row) => {
   editForm.enterprise_name = row.enterprise_name
   editForm.region = row.region
   editForm.legal_representative = row.legal_representative
+  editForm.enterprise_category = row.enterprise_category || 5
   editForm.is_intention = row.is_intention || false
   editForm.is_signed = row.is_signed || false
   editForm.contact_info = JSON.parse(JSON.stringify(row.contact_info || []))
