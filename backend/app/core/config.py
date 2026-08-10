@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 465
     SMTP_USER: str = ""
     SMTP_PASS: str = ""
-    SENDER_NAME: str = "北京觅理律师事务所"
+    SENDER_NAME: str = "觅理常法"
 
     # ---------------- 3. 动态路径配置（自动计算，精准定位） ----------------
     # BASE_DIR: current_file -> app/core/config.py -> parent(core) -> parent(app) -> parent(backend)

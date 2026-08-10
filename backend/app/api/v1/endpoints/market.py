@@ -61,21 +61,36 @@ def send_marketing_email(req: SendEmailReq):
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>邮件正文</title>
         </head>
-        <body style="margin: 0; padding: 0; background-color: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
-          <!-- 最外层卡片容器 (使用 table 保证所有邮件客户端居中) -->
-          <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f5f7; padding: 20px 0;">
+        <body style="margin: 0; padding: 0; background-color: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+          <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f5f7; padding: 25px 0;">
             <tr>
               <td align="center">
-                <!-- 正文主卡片 -->
-                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; border: 1px solid #eaedf1; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; border: 1px solid #eaedf1; overflow: hidden;">
+                  
+                  <!-- 顶部品牌 Header -->
+                  <tr>
+                    <td style="background-color: #1a2b4c; padding: 18px 25px;">
+                      <span style="color: #ffffff; font-size: 16px; font-weight: bold; letter-spacing: 1px;">北京觅理律师事务所</span>
+                      <span style="color: #a0aec0; font-size: 12px; float: right; margin-top: 3px;">常年法律顾问团队</span>
+                    </td>
+                  </tr>
+
+                  <!-- 正文主体 -->
                   <tr>
                     <td style="padding: 30px 25px;">
                       
-                      <!-- 邮件主要文案内容 -->
-                      <div style="font-size: 15px; color: #2c3e50; line-height: 1.7; word-break: break-word;">
+                      <!-- 格式化后的正文内容 -->
+                      <div style="font-size: 14px; color: #2c3e50; line-height: 1.8; word-break: break-word;">
                         {formatted_body}
+                      </div>
+
+                      <!-- 营销 CTA 引导按钮 -->
+                      <div style="text-align: center; margin: 30px 0 20px 0;">
+                        <a href="mailto:{settings.SMTP_USER}?subject=预约免费法律体检评估" 
+                           style="background-color: #1a2b4c; color: #ffffff; padding: 12px 28px; text-decoration: none; font-size: 14px; font-weight: bold; border-radius: 4px; display: inline-block;">
+                           👉 直接回复本邮件，预约 15 分钟免费解读
+                        </a>
                       </div>
 
                       <!-- 分割线 -->
@@ -87,17 +102,26 @@ def send_marketing_email(req: SendEmailReq):
 
                       <!-- 海报图片展示区 -->
                       <div style="text-align: center;">
-                        <p style="font-size: 12px; color: #909399; margin: 0 0 12px 0; font-weight: normal;">
-                          --- 随信附带《企业法律健康体检清单》---
+                        <p style="font-size: 13px; color: #4a5568; margin: 0 0 12px 0; font-weight: bold;">
+                          ▼ 随信附带《企业法律健康体检清单》
                         </p>
                         <img src="cid:poster_img_cid" alt="企业法律健康体检清单" width="550" style="width: 100%; max-width: 550px; height: auto; border-radius: 6px; display: block; margin: 0 auto; border: 0;" />
                       </div>
 
                     </td>
                   </tr>
+
+                  <!-- 页脚 Footer -->
+                  <tr>
+                    <td style="background-color: #fafbfc; padding: 15px 25px; text-align: center; border-top: 1px solid #f0f0f0;">
+                      <p style="font-size: 12px; color: #a0aec0; margin: 0; line-height: 1.5;">
+                        北京觅理律师事务所 · 助力企业合规稳健生长<br>
+                        如需退订，请回复“退订”
+                      </p>
+                    </td>
+                  </tr>
+
                 </table>
-                <!-- 卡片结束 -->
-                
               </td>
             </tr>
           </table>
