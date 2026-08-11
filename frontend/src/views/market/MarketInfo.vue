@@ -327,61 +327,71 @@
     <!-- 5. 跟进记录侧边抽屉 -->
     <el-drawer
         v-model="traceDrawerVisible"
-        :title="`跟进记录 - ${currentEnterprise.enterprise_name || ''}`"
-        size="500px"
+        :title="`跟进记录 -- ${currentEnterprise.enterprise_name || ''}`"
+        size="520px"
         direction="rtl"
+        custom-class="custom-trace-drawer"
     >
-      <div class="trace-form-box" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #ebeef5;">
-        <h4 style="margin-bottom: 10px; color: #303133;">添加新跟进</h4>
-        <el-form :model="traceForm" label-width="80px">
-          <el-form-item label="跟进方式">
-            <el-select v-model="traceForm.trace_type" placeholder="请选择跟进方式" style="width: 100%;">
-              <el-option label="邮件" :value="1"/>
-              <el-option label="电话" :value="2"/>
-              <el-option label="微信" :value="3"/>
-              <el-option label="线下" :value="4"/>
-            </el-select>
-          </el-form-item>
-          <el-form-item label="跟进内容">
-            <el-input
-                v-model="traceForm.content"
-                type="textarea"
-                :rows="3"
-                placeholder="请输入本次沟通详情、客户反馈等..."
-            />
-          </el-form-item>
-          <el-form-item style="margin-bottom: 0; text-align: right;">
-            <el-button type="primary" :loading="traceSubmitting" @click="submitTrace">提交跟进</el-button>
-          </el-form-item>
-        </el-form>
-      </div>
-
-      <div class="trace-timeline-box">
-        <h4 style="margin-bottom: 15px; color: #303133;">历史跟进轨迹</h4>
-        <div v-if="traceList.length === 0" style="color: #909399; text-align: center; padding: 20px 0;">
-          暂无跟进记录
+      <div class="drawer-inner-container">
+        <!-- 5.1 添加跟进卡片 -->
+        <div class="trace-card add-card">
+          <div class="card-header">
+            <span class="header-mark"></span>
+            <span class="header-title">添加新跟进</span>
+          </div>
+          <el-form :model="traceForm" label-width="80px" label-position="left" class="trace-form">
+            <el-form-item label="跟进方式">
+              <el-select v-model="traceForm.trace_type" placeholder="请选择跟进方式" style="width: 100%;">
+                <el-option label="邮件" :value="1"/>
+                <el-option label="电话" :value="2"/>
+                <el-option label="微信" :value="3"/>
+                <el-option label="线下" :value="4"/>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="跟进内容">
+              <el-input
+                  v-model="traceForm.content"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="请输入本次沟通详情、客户反馈等..."
+                  resize="none"
+              />
+            </el-form-item>
+            <div class="form-action-right">
+              <el-button type="primary" class="submit-btn" :loading="traceSubmitting" @click="submitTrace">
+                提交跟进
+              </el-button>
+            </div>
+          </el-form>
         </div>
-        <div v-else class="timeline-scroll-container">
-          <el-timeline>
-            <el-timeline-item
-                v-for="item in traceList"
-                :key="item.id"
-                :timestamp="formatDate(item.created_at)"
-                placement="top"
-            >
-              <el-card shadow="hover" style="margin-bottom: 10px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                  <el-tag size="small" :type="getTraceTypeTag(item.trace_type)">
+
+        <!-- 5.2 历史跟进轨迹卡片列表 -->
+        <div class="trace-card history-card">
+          <div class="card-header">
+            <span class="header-mark"></span>
+            <span class="header-title">历史跟进轨迹</span>
+          </div>
+
+          <div v-if="traceList.length === 0" class="empty-trace">
+            <el-empty description="暂无跟进记录" :image-size="80"/>
+          </div>
+
+          <div v-else class="timeline-scroll-container">
+            <div v-for="item in traceList" :key="item.id" class="history-item-card">
+              <div class="item-header">
+                <div class="header-left">
+                  <el-tag size="small" class="type-tag" :type="getTraceTypeTag(item.trace_type)">
                     {{ getTraceTypeText(item.trace_type) }}
                   </el-tag>
-                  <span style="font-size: 12px; color: #909399;">跟进人：{{ item.creator_name }}</span>
+                  <span class="creator-name">跟进人：{{ item.creator_name || '系统用户' }}</span>
                 </div>
-                <p style="margin: 5px 0 0 0; white-space: pre-wrap; word-break: break-all; font-size: 14px; color: #606266;">
-                  {{ item.content }}
-                </p>
-              </el-card>
-            </el-timeline-item>
-          </el-timeline>
+                <span class="trace-time">{{ formatDate(item.created_at) }}</span>
+              </div>
+              <div class="item-body">
+                <p class="trace-content">{{ item.content }}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </el-drawer>
@@ -1112,5 +1122,149 @@ onMounted(() => {
 
 .status-text.is-sent {
   color: #67c23a;
+}
+
+/* ==================== 跟进记录抽屉专项优化样式 ==================== */
+/* 抽屉整体间距与背景 */
+.drawer-inner-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px;
+}
+
+/* 通用区块卡片样式（与 20px 圆角保持一致） */
+.trace-card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  padding: 18px 20px;
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+  transition: all 0.2s ease;
+}
+
+/* 卡片标题及标志线条 */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.header-mark {
+  width: 4px;
+  height: 16px;
+  background-color: #0284c7;
+  border-radius: 2px;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #020617; /* 深度加黑，醒目突出 */
+  letter-spacing: 0.3px;
+}
+
+/* 表单内部对齐与按钮控制 */
+.trace-form :deep(.el-form-item__label) {
+  font-weight: 700;
+  color: #1e293b; /* 标签文字加深 */
+}
+
+.trace-form :deep(.el-textarea__inner) {
+  border-radius: 8px;
+  color: #0f172a;
+}
+
+.form-action-right {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.submit-btn {
+  height: 40px; /* 根据需要调整高度 */
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 0 20px;
+}
+
+/* 历史列表滚动容器 */
+.timeline-scroll-container {
+  max-height: calc(100vh - 380px);
+  overflow-y: auto;
+  padding-right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timeline-scroll-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+.timeline-scroll-container::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* 历史单条记录卡片 */
+.history-item-card {
+  background-color: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: all 0.2s ease;
+}
+
+.history-item-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.type-tag {
+  font-weight: 700;
+  border-radius: 6px;
+}
+
+.creator-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155; /* 文字加深对齐 */
+}
+
+.trace-time {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.item-body {
+  padding-top: 2px;
+}
+
+.trace-content {
+  margin: 0;
+  font-size: 14px;
+  color: #0f172a; /* 正文文字深度加黑 */
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.empty-trace {
+  padding: 20px 0;
 }
 </style>
