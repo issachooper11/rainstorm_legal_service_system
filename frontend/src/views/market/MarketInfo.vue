@@ -959,8 +959,8 @@ const handleCurrentChange = (val) => {
 // ---------------- 9. 跟进记录逻辑 ----------------
 const handleOpenTrace = async (row) => {
   currentEnterprise.value = row
-  traceForm.content = ''
-  traceForm.trace_type = 2
+  traceForm.content = '发送邮件，确认手机号和微信'
+  traceForm.trace_type = 1
   traceDrawerVisible.value = true
   await fetchTraces(row.id)
 }
