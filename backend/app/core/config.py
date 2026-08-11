@@ -37,6 +37,10 @@ class Settings(BaseSettings):
         """常法产品手册 PDF 路径 (backend/app/assets/觅理-常法产品手册.pdf)"""
         return self.ASSETS_DIR / "觅理-常法产品手册.pdf"
 
+    @property
+    def PRODUCT_SCAN_PATH(self) -> Path:
+        """二维码路径 (backend/app/assets/觅理-二维码.png)"""
+        return self.ASSETS_DIR / "觅理-二维码.png"
     # ---------------- 4. 环境变量配置文件定位 ----------------
     # 动态定位到 backend/.env 文件，解决命令行启动路径不同导致找不到 .env 的问题
     model_config = SettingsConfigDict(
