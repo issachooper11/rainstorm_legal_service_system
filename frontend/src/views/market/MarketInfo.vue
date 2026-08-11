@@ -187,13 +187,21 @@
           <template #default="{ row }">
             <div v-if="row.contact_info && row.contact_info.length" class="cell-list-container">
               <div v-for="(item, index) in row.contact_info" :key="index" class="json-cell-item">
-                <span
-                    :class="['status-text', item.is_sms_sent ? 'is-sent' : 'is-pending']"
-                    @click="handleSendMsg('sms', row, item, index)"
-                >
-                  【{{ item.is_sms_sent ? '已发送' : '待发送' }}】
-                </span>
-                <span>{{ item.phone }}：{{ item.name || '待查询' }}</span>
+        <span
+            :class="['status-text', item.is_sms_sent ? 'is-sent' : 'is-pending']"
+            @click="handleSendMsg('sms', row, item, index)"
+        >
+          【{{ item.is_sms_sent ? '已发送' : '待发送' }}】
+        </span>
+
+                <!-- 优化逻辑：判断 item.name 存在且不等于 '待查询' -->
+                <span>
+          {{ item.phone }}：
+          <span :class="(item.name && item.name !== '待查询') ? 'contact-name-has-value' : 'contact-name-empty'">
+            {{ item.name || '待查询' }}
+          </span>
+        </span>
+
               </div>
             </div>
             <span v-else style="color: #909399;">暂无联系方式</span>
@@ -201,7 +209,7 @@
         </el-table-column>
 
         <!-- 邮箱列 -->
-        <el-table-column label="邮箱" min-width="240" align="center" header-align="center">
+        <el-table-column label="邮箱" min-width="300" align="center" header-align="center">
           <template #default="{ row }">
             <div v-if="row.email && row.email.length" class="cell-list-container">
               <div v-for="(item, index) in row.email" :key="index" class="json-cell-item">
@@ -1272,5 +1280,16 @@ onMounted(() => {
 
 .empty-trace {
   padding: 20px 0;
+}
+
+/* 有名字时的颜色（方案 1：品牌蓝） */
+.contact-name-has-value {
+  color: #409EFF; /* 或者使用 Element Plus 变量 var(--el-color-primary) */
+  font-weight: 500;
+}
+
+/* 无名字/待查询时的颜色（灰色） */
+.contact-name-empty {
+  color: #909399;
 }
 </style>
