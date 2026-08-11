@@ -1,5 +1,9 @@
 <template>
   <div class="dashboard-container">
+    <!-- 极简纯净背景光晕 -->
+    <div class="bg-glow glow-blue"></div>
+    <div class="bg-glow glow-red"></div>
+
     <!-- 左侧工具栏 -->
     <aside :class="['sidebar', { 'sidebar-collapsed': isCollapsed }]">
       <!-- 顶部 Logo 区域 -->
@@ -7,7 +11,7 @@
         <div class="logo-icon">M</div>
         <div class="logo-text" v-show="!isCollapsed">
           <div class="title-cn">北京觅理律师事务所</div>
-          <div class="title-en">MILICY LAW FIRM</div>
+          <div class="title-en">BEIJING MILLY LAW FIRM</div>
         </div>
       </div>
 
@@ -19,7 +23,7 @@
           :router="true"
           background-color="#ffffff"
           text-color="#475569"
-          active-text-color="#0284c7"
+          active-text-color="#1d4ed8"
       >
         <!-- 团队管理 -->
         <el-sub-menu index="team" v-if="[1, 2, 5].includes(userInfo.role)">
@@ -49,7 +53,8 @@
             <el-icon>
               <Tickets/>
             </el-icon>
-            <span>市场信息</span></el-menu-item>
+            <span>市场信息</span>
+          </el-menu-item>
         </el-sub-menu>
 
         <!-- 案件管理 -->
@@ -64,7 +69,8 @@
             <el-icon>
               <Tickets/>
             </el-icon>
-            <span>案件管理</span></el-menu-item>
+            <span>案件管理</span>
+          </el-menu-item>
         </el-sub-menu>
       </el-menu>
 
@@ -102,6 +108,7 @@
 
     <!-- 右侧主体内容区域 -->
     <div class="main-content">
+      <!-- 固定的顶部导航条 -->
       <header class="top-navbar">
         <div class="nav-left">
           <div class="module-tag">
@@ -120,10 +127,34 @@
         </div>
       </header>
 
-      <!-- 核心视图容器 -->
-      <main class="main-view">
+      <!-- 💡 可平滑独立滚动的信息卡片区域 -->
+      <main class="main-view" ref="scrollTarget">
         <div class="view-card">
           <router-view/>
+        </div>
+
+        <!-- 💡 右下角浮动控制按钮组（包含回到顶部和一键到底部） -->
+        <div class="scroll-actions-group">
+          <!-- 回到顶部按钮 -->
+          <el-backtop
+              target=".main-view"
+              :visibility-height="100"
+          >
+            <div class="action-btn-inner" title="回到顶部">
+              <el-icon>
+                <CaretTop/>
+              </el-icon>
+            </div>
+          </el-backtop>
+
+          <!-- 一键到底部按钮 -->
+          <div class="action-btn-bottom" @click="scrollToBottom" title="一键到底部">
+            <div class="action-btn-inner">
+              <el-icon>
+                <CaretBottom/>
+              </el-icon>
+            </div>
+          </div>
         </div>
       </main>
     </div>
@@ -145,11 +176,24 @@
 import {computed, reactive, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {ElMessage} from 'element-plus'
-import {User, TrendCharts, FolderOpened, ArrowLeft, ArrowRight, SwitchButton} from '@element-plus/icons-vue'
+import {
+  User,
+  TrendCharts,
+  FolderOpened,
+  ArrowLeft,
+  ArrowRight,
+  SwitchButton,
+  CaretTop,
+  CaretBottom,
+  Tickets
+} from '@element-plus/icons-vue'
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 
 const router = useRouter()
 const route = useRoute()
+
+// 视图容器 Ref
+const scrollTarget = ref(null)
 
 // 控制退出弹窗显示
 const showLogoutDialog = ref(false)
@@ -157,6 +201,16 @@ const showLogoutDialog = ref(false)
 const isCollapsed = ref(false)
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
+}
+
+// 💡 一键滚动到底部方法
+const scrollToBottom = () => {
+  if (scrollTarget.value) {
+    scrollTarget.value.scrollTo({
+      top: scrollTarget.value.scrollHeight,
+      behavior: 'smooth'
+    })
+  }
 }
 
 const userInfo = reactive({
@@ -204,31 +258,55 @@ const getRoleText = (roleNum) => {
 </script>
 
 <style scoped>
-/* ================= 1. 全局与侧边栏布局 ================= */
-/* 1. 修复整体外层背景色（统一为右侧的淡蓝灰底色） */
+/* ================= 1. 全局布局与白底红蓝氛围 ================= */
 .dashboard-container {
+  position: relative;
   display: flex;
   height: 100vh;
   width: 100vw;
-  background-color: #eaf3ff; /* 💡 修改：精准匹配截图的天蓝背景 */
+  background-color: #ffffff; /* 纯白主底色 */
+  background-image: radial-gradient(#e2e8f0 0.8px, transparent 0.8px); /* 极细白灰色点阵纹理 */
+  background-size: 24px 24px;
   overflow: hidden;
   box-sizing: border-box;
 }
 
-/* 侧边栏：调整为与右侧一致的卡片式圆角设计 */
+/* 柔和红蓝弥散光晕 */
+.bg-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(140px);
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.glow-blue {
+  top: -200px;
+  left: 10%;
+  background: #1d4ed8;
+}
+
+.glow-red {
+  bottom: -200px;
+  right: 10%;
+  background: #dc2626;
+}
+
+/* ================= 2. 左侧 Sidebar 侧边栏 ================= */
 .sidebar {
   position: relative;
   width: 240px;
   background-color: #ffffff;
-  border: 1px solid rgba(186, 214, 245, 0.7); /* 💡 修改：与顶栏边框色系一致 */
-  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
   margin: 12px 0 12px 12px;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.05);
   display: flex;
   flex-direction: column;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 10;
-  /* overflow: hidden;  💡 移除此行！允许超出定位的折叠按钮正常显示 */
   box-sizing: border-box;
 }
 
@@ -245,8 +323,8 @@ const getRoleText = (roleNum) => {
   border-bottom: 1px solid #f1f5f9;
   cursor: pointer;
   transition: background-color 0.2s;
-  border-top-left-radius: 16px; /* 💡 新增：保证顶部跟随卡片圆角 */
-  border-top-right-radius: 16px;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
 }
 
 .sidebar-header:hover {
@@ -257,10 +335,11 @@ const getRoleText = (roleNum) => {
   padding: 0;
 }
 
+/* LOGO 图标更换为纯蓝纯红极彩渐变 */
 .logo-icon {
   width: 38px;
   height: 38px;
-  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%, #dc2626 100%);
   color: #ffffff;
   font-weight: 800;
   font-size: 20px;
@@ -269,7 +348,7 @@ const getRoleText = (roleNum) => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
 }
 
 .logo-text {
@@ -279,18 +358,19 @@ const getRoleText = (roleNum) => {
 
 .title-cn {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
   color: #0f172a;
   letter-spacing: 0.5px;
 }
 
 .title-en {
-  font-size: 9px;
+  font-size: 8px;
+  font-weight: 700;
   color: #64748b;
   letter-spacing: 1px;
 }
 
-/* ================= 2. 菜单栏 ================= */
+/* ================= 3. 菜单栏 ================= */
 .el-menu-vertical {
   border-right: none;
   flex: 1;
@@ -311,22 +391,21 @@ const getRoleText = (roleNum) => {
 }
 
 :deep(.el-menu-item:hover), :deep(.el-sub-menu__title:hover) {
-  background-color: #f1f5f9 !important;
-  color: #0284c7 !important;
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
 }
 
 :deep(.el-menu-item.is-active) {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
-  color: #0284c7 !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
   font-weight: 700;
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.08);
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.08);
   border-right: none !important;
 }
 
 :deep(.el-menu--collapse .el-sub-menu__title),
 :deep(.el-menu--collapse .el-menu-item) {
   justify-content: center !important;
-  padding: 0 !important;
 }
 
 :deep(.el-menu--collapse .el-sub-menu__title .el-icon),
@@ -334,7 +413,7 @@ const getRoleText = (roleNum) => {
   margin: 0 !important;
 }
 
-/* ================= 3. 底部用户信息与退出按钮 ================= */
+/* ================= 4. 底部用户信息与退出按钮 ================= */
 .sidebar-footer {
   padding: 16px;
   border-top: 1px solid #f1f5f9;
@@ -342,8 +421,8 @@ const getRoleText = (roleNum) => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border-bottom-left-radius: 16px; /* 💡 新增：保证底部跟随卡片圆角 */
-  border-bottom-right-radius: 16px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
 }
 
 .sidebar-collapsed .sidebar-footer {
@@ -357,13 +436,14 @@ const getRoleText = (roleNum) => {
   gap: 10px;
   padding: 8px 10px;
   background-color: #f8fafc;
-  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
 }
 
 .user-avatar {
   width: 34px;
   height: 34px;
-  background: linear-gradient(135deg, #0284c7 0%, #0f2c59 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
   color: #ffffff;
   font-weight: 700;
   border-radius: 50%;
@@ -372,7 +452,7 @@ const getRoleText = (roleNum) => {
   justify-content: center;
   font-size: 14px;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.2);
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.25);
 }
 
 .user-detail {
@@ -392,14 +472,14 @@ const getRoleText = (roleNum) => {
 
 .user-role {
   font-size: 11px;
-  color: #0284c7;
-  font-weight: 500;
+  color: #1d4ed8;
+  font-weight: 600;
 }
 
 .logout-btn {
   width: 100%;
   height: 38px;
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   background: #fef2f2 !important;
   border: 1px solid #fecaca !important;
   color: #dc2626 !important;
@@ -426,7 +506,6 @@ const getRoleText = (roleNum) => {
   transform: scale(0.98);
 }
 
-/* 侧边栏展开/收起按钮 */
 .collapse-btn {
   position: absolute;
   top: 50%;
@@ -435,7 +514,7 @@ const getRoleText = (roleNum) => {
   width: 26px;
   height: 26px;
   background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #cbd5e1;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -448,37 +527,36 @@ const getRoleText = (roleNum) => {
 }
 
 .collapse-btn:hover {
-  background-color: #0284c7;
+  background-color: #1d4ed8;
   color: #ffffff;
-  border-color: #0284c7;
-  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+  border-color: #1d4ed8;
+  box-shadow: 0 4px 10px rgba(29, 78, 216, 0.3);
 }
 
-/* ================= 4. 右侧主体内容区域（无底层多余滚动条） ================= */
+/* ================= 5. 右侧主体与独立滚动区域 ================= */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto; /* 纵向滚动放最外层 */
-  overflow-x: hidden; /* 💡 取消/隐藏右部分下边的横向滚动条 */
-  background-color: #eaf3ff;
+  height: 100vh;
+  overflow: hidden;
   padding: 12px 12px 12px 8px;
   gap: 12px;
   box-sizing: border-box;
 }
 
-/* 顶部 Top-Navbar */
+/* 顶部 Top-Navbar (固定不动) */
 .top-navbar {
   height: 60px;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(186, 214, 245, 0.6); /* 💡 修改：使用天蓝调柔和边框 */
+  border: 1px solid #e2e8f0;
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  box-shadow: 0 4px 16px -5px rgba(2, 132, 199, 0.05); /* 💡 修改：微调为蓝色调阴影 */
+  box-shadow: 0 4px 16px -5px rgba(15, 23, 42, 0.04);
   z-index: 5;
   flex-shrink: 0;
 }
@@ -486,26 +564,25 @@ const getRoleText = (roleNum) => {
 .nav-left .module-tag {
   display: inline-flex;
   align-items: center;
-  background-color: #ffffff;
-  padding: 6px 16px;
+  background-color: #eff6ff; /* 浅纯蓝衬底 */
+  padding: 5px 16px;
   border-radius: 30px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  border: 1px solid #bfdbfe;
 }
 
 .module-dot {
-  width: 8px;
-  height: 8px;
-  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  width: 7px;
+  height: 7px;
+  background-color: #dc2626; /* 纯红标点 */
   border-radius: 50%;
   margin-right: 10px;
-  box-shadow: 0 0 8px rgba(2, 132, 199, 0.4);
+  box-shadow: 0 0 6px rgba(220, 38, 38, 0.5);
 }
 
 .current-position {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: #1d4ed8; /* 纯深蓝 */
   letter-spacing: 0.5px;
 }
 
@@ -513,16 +590,16 @@ const getRoleText = (roleNum) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  background: #ffffff;
   padding: 5px 8px 5px 14px;
   border-radius: 30px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
 }
 
 .badge-icon {
   font-size: 14px;
-  color: #0284c7;
+  color: #1d4ed8;
 }
 
 .welcome-text {
@@ -537,45 +614,110 @@ const getRoleText = (roleNum) => {
 
 .role-pill {
   font-size: 11px;
-  font-weight: 600;
-  color: #0369a1;
-  background: #e0f2fe;
-  padding: 3px 10px;
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 2px 10px;
   border-radius: 20px;
   letter-spacing: 0.5px;
 }
 
-/* 主视图与卡片区域 */
+/* 下方可滚动的主视图画布 */
 .main-view {
   flex: 1;
-  padding: 0;
-  overflow: visible;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
   box-sizing: border-box;
 }
 
 .view-card {
   min-height: 100%;
   background-color: #ffffff;
-  border-radius: 16px;
-  border: 1px solid rgba(186, 214, 245, 0.7); /* 💡 修改：匹配天蓝边框 */
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
   padding: 20px;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.04);
   box-sizing: border-box;
-  overflow-x: hidden; /* 💡 避免卡片内容溢出产生底部横向滑动条 */
+  overflow-x: hidden;
 }
 
-/* 精致自定义滚动条 */
-.main-content::-webkit-scrollbar {
+/* 💡 右下角浮动控制按钮组 */
+.scroll-actions-group {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 99;
+}
+
+/* 重置 Element 回到顶部按钮 */
+:deep(.el-backtop) {
+  position: relative !important;
+  right: auto !important;
+  bottom: auto !important;
+  background-color: #ffffff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(29, 78, 216, 0.15) !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+:deep(.el-backtop:hover),
+.action-btn-bottom:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(29, 78, 216, 0.35) !important;
+}
+
+/* 自定义一键到底部按钮 */
+.action-btn-bottom {
+  width: 40px;
+  height: 40px;
+  background-color: #ffffff;
+  color: #1d4ed8;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(29, 78, 216, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.action-btn-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+/* 精细的内嵌滚动条 */
+.main-view::-webkit-scrollbar {
   width: 6px;
-  height: 0px; /* 💡 隐藏横向滚动条 */
+  height: 0px;
 }
 
-.main-content::-webkit-scrollbar-thumb {
+.main-view::-webkit-scrollbar-thumb {
   background-color: #cbd5e1;
   border-radius: 4px;
 }
 
-.main-content::-webkit-scrollbar-track {
+.main-view::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+.main-view::-webkit-scrollbar-track {
   background: transparent;
 }
 </style>

@@ -471,13 +471,25 @@
         <el-button type="primary" :loading="emailSending" @click="submitSendEmail">确定发送</el-button>
       </template>
     </el-dialog>
+
+    <!-- 8. 通用 ConfirmDialog 确认弹窗 -->
+    <ConfirmDialog
+        v-model:visible="confirmDialogVisible"
+        :title="confirmDialogTitle"
+        :message="confirmDialogMessage"
+        :type="confirmDialogType"
+        :confirm-button-type="confirmButtonType"
+        @confirm="handleConfirmAction"
+        @cancel="confirmDialogVisible = false"
+    />
   </div>
 </template>
 
 <script setup>
 import {ref, reactive, onMounted} from 'vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {ElMessage} from 'element-plus'
 import {Upload, Operation, Select, Search, Refresh, Delete, Message, Iphone, Plus} from '@element-plus/icons-vue'
+
 import {
   getMarketListApi,
   importMarketExcelApi,
@@ -486,6 +498,7 @@ import {
   sendMarketEmailApi
 } from "../../api/market.js"
 import {getEnterpriseTracesApi, createEnterpriseTraceApi} from "../../api/trace.js"
+import ConfirmDialog from "../../components/ConfirmDialog.vue";
 
 // ---------------- 1. 营销模板数据常量定义 ----------------
 const EMAIL_TEMPLATES = {
@@ -657,6 +670,15 @@ const emailForm = reactive({
   body: ''
 })
 
+// ConfirmDialog 状态管理
+const confirmDialogVisible = ref(false)
+const confirmDialogTitle = ref('警告')
+const confirmDialogMessage = ref('')
+const confirmDialogType = ref('warning')
+const confirmButtonType = ref('danger')
+const currentActionType = ref('') // 'singleDelete' | 'batchDelete'
+const rowToDelete = ref(null)
+
 // ---------------- 3. 方法分发入口 ----------------
 const handleSendMsg = (type, row, item) => {
   currentTargetRow.value = row
@@ -697,20 +719,17 @@ const handleSmsCategoryChange = (catVal) => {
 const submitSendSms = async () => {
   smsSending.value = true
   try {
-    // 拷贝并修改状态
     const updatedContactInfo = JSON.parse(JSON.stringify(currentTargetRow.value.contact_info || []))
     const target = updatedContactInfo.find(c => c.phone === currentTargetItem.value.phone)
     if (target) {
       target.is_sms_sent = true
     }
 
-    // 调用后端更新数据接口持久化
     await updateMarketApi(currentTargetRow.value.id, {
       ...currentTargetRow.value,
       contact_info: updatedContactInfo
     })
 
-    // 同步本地视图
     currentTargetItem.value.is_sms_sent = true
     ElMessage.success('短信发送成功，状态已更新！')
     smsDialogVisible.value = false
@@ -734,7 +753,6 @@ const handleEmailCategoryChange = (catVal) => {
 const submitSendEmail = async () => {
   emailSending.value = true
   try {
-    // ✅ 核心修复：对应后端 SendEmailReq Pydantic 模型的字段名
     await sendMarketEmailApi({
       enterprise_id: Number(currentTargetRow.value.id),
       email: String(emailForm.email).trim(),
@@ -742,7 +760,6 @@ const submitSendEmail = async () => {
       body: emailForm.body
     })
 
-    // 状态更新为已发送并写入数据库
     const updatedEmailList = JSON.parse(JSON.stringify(currentTargetRow.value.email || []))
     const target = updatedEmailList.find(e => e.email === currentTargetItem.value.email)
     if (target) {
@@ -848,22 +865,44 @@ const submitEdit = async () => {
   }
 }
 
-// ---------------- 8. 删除与批量处理 ----------------
+// ---------------- 8. 删除与批量处理 (已改用 ConfirmDialog) ----------------
 const handleDelete = (row) => {
-  ElMessageBox.confirm(`确认要删除企业【${row.enterprise_name}】吗？`, '警告', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
+  rowToDelete.value = row
+  currentActionType.value = 'singleDelete'
+  confirmDialogTitle.value = '警告'
+  confirmDialogMessage.value = `确认要删除企业【${row.enterprise_name}】吗？`
+  confirmDialogType.value = 'warning'
+  confirmButtonType.value = 'danger'
+  confirmDialogVisible.value = true
+}
+
+const handleBatchDelete = () => {
+  if (selectedRows.value.length === 0) return ElMessage.warning('请先勾选需要批量删除的项')
+  currentActionType.value = 'batchDelete'
+  confirmDialogTitle.value = '批量删除确认'
+  confirmDialogMessage.value = `确认要删除选中的 ${selectedRows.value.length} 项数据吗？`
+  confirmDialogType.value = 'warning'
+  confirmButtonType.value = 'danger'
+  confirmDialogVisible.value = true
+}
+
+// ConfirmDialog 统一点击确认后的响应函数
+const handleConfirmAction = async () => {
+  confirmDialogVisible.value = false
+  if (currentActionType.value === 'singleDelete') {
     try {
-      await deleteMarketApi(row.id)
+      await deleteMarketApi(rowToDelete.value.id)
       ElMessage.success('删除成功')
       fetchTableData()
     } catch (error) {
       ElMessage.error('删除失败')
+    } finally {
+      rowToDelete.value = null
     }
-  }).catch(() => {
-  })
+  } else if (currentActionType.value === 'batchDelete') {
+    // 处理批量删除 API 调用逻辑
+    ElMessage.info(`已触发删除 ${selectedRows.value.length} 项`)
+  }
 }
 
 const handleSelectionChange = (val) => {
@@ -873,13 +912,6 @@ const handleSelectionChange = (val) => {
 const toggleMultiSelect = () => {
   isMultiSelect.value = !isMultiSelect.value
   if (!isMultiSelect.value) selectedRows.value = []
-}
-
-const handleBatchDelete = () => {
-  if (selectedRows.value.length === 0) return ElMessage.warning('请先勾选需要批量删除的项')
-  ElMessageBox.confirm(`确认要删除选中的 ${selectedRows.value.length} 项数据吗？`, '提示', {type: 'warning'}).then(() => {
-    ElMessage.info('已触发批量删除')
-  })
 }
 
 const handleBatchEmail = () => {

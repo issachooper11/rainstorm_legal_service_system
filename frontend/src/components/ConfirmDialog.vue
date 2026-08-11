@@ -9,13 +9,16 @@
       @close="$emit('cancel')"
   >
     <div class="dialog-content">
-      <el-icon class="warning-icon" v-if="type === 'warning'">
+      <el-icon class="status-icon warning" v-if="type === 'warning'">
         <WarningFilled/>
       </el-icon>
-      <span>{{ message }}</span>
+      <el-icon class="status-icon info" v-else-if="type === 'info'">
+        <InfoFilled/>
+      </el-icon>
+      <div class="message-text">{{ message }}</div>
     </div>
     <template #footer>
-      <span class="dialog-footer">
+      <div class="dialog-footer">
         <el-button class="cancel-btn" @click="$emit('cancel')">{{ cancelText }}</el-button>
         <el-button
             :class="['confirm-btn', confirmButtonType === 'danger' ? 'danger-btn' : 'primary-btn']"
@@ -24,13 +27,13 @@
         >
           {{ confirmText }}
         </el-button>
-      </span>
+      </div>
     </template>
   </el-dialog>
 </template>
 
 <script setup>
-import {WarningFilled} from '@element-plus/icons-vue'
+import {WarningFilled, InfoFilled} from '@element-plus/icons-vue'
 
 defineProps({
   visible: {
@@ -39,15 +42,15 @@ defineProps({
   },
   title: {
     type: String,
-    default: '提示'
+    default: '安全确认' // 优化：由原先的“提示”改为更明确的“安全确认”
   },
   message: {
     type: String,
-    default: '确认进行此操作吗？'
+    default: '该操作不可逆，请确认是否继续？' // 优化：提升提示警示力
   },
   width: {
     type: String,
-    default: '400px'
+    default: '420px'
   },
   type: {
     type: String,
@@ -55,7 +58,7 @@ defineProps({
   },
   confirmText: {
     type: String,
-    default: '确定'
+    default: '确认继续'
   },
   cancelText: {
     type: String,
@@ -63,7 +66,7 @@ defineProps({
   },
   confirmButtonType: {
     type: String,
-    default: 'danger' // 退出通常用危险红色按钮
+    default: 'danger' // danger / primary
   }
 })
 
@@ -73,10 +76,10 @@ defineEmits(['update:visible', 'confirm', 'cancel'])
 <style scoped>
 /* 深度自定义 Element Plus 弹窗样式 */
 :deep(.custom-confirm-dialog) {
-  border-radius: 20px !important; /* 统一 20px 大圆角 */
+  border-radius: 20px !important;
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.18) !important;
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
+  border: 1px solid rgba(203, 213, 225, 0.8);
 }
 
 :deep(.el-dialog__header) {
@@ -85,53 +88,70 @@ defineEmits(['update:visible', 'confirm', 'cancel'])
 }
 
 :deep(.el-dialog__title) {
-  font-size: 17px;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: 0.3px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #020617; /* 更加深邃醒目的黑色 */
+  letter-spacing: 0.5px;
 }
 
 :deep(.el-dialog__body) {
-  padding: 8px 28px 24px;
+  padding: 12px 28px 24px;
 }
 
 :deep(.el-dialog__footer) {
   padding: 16px 28px 24px;
-  border-top: none;
-  background-color: #f8fafc; /* 底部背景微对比 */
+  border-top: 1px solid #f1f5f9;
+  background-color: #f8fafc;
 }
 
-/* 弹窗内容 */
+/* 弹窗内容排版与强化 */
 .dialog-content {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  color: #334155;
+  align-items: center; /* 顶部对齐，适合多行文本时图标依然美观 */
+  gap: 14px;
+}
+
+.message-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a; /* 加深文案颜色 */
   line-height: 1.6;
+  letter-spacing: 0.2px;
+  word-break: break-word;
 }
 
-.warning-icon {
-  font-size: 26px;
-  color: #f59e0b; /* 暖阳黄 */
+/* 状态图标醒目处理 */
+.status-icon {
+  font-size: 28px;
   flex-shrink: 0;
-  filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.2));
+  margin-top: 2px;
 }
 
+.status-icon.warning {
+  color: #d97706; /* 加深警告黄 */
+  filter: drop-shadow(0 3px 6px rgba(217, 119, 6, 0.3));
+}
+
+.status-icon.info {
+  color: #0284c7;
+  filter: drop-shadow(0 3px 6px rgba(2, 132, 199, 0.3));
+}
+
+/* 底部按钮对齐与样式增粗 */
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
 }
 
 /* 取消按钮 */
 .cancel-btn {
-  height: 38px;
+  height: 40px;
   border-radius: 12px !important;
-  padding: 0 20px;
-  font-weight: 600;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  padding: 0 22px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #475569;
+  border: 1px solid #cbd5e1;
   background-color: #ffffff;
   transition: all 0.2s ease;
 }
@@ -139,50 +159,52 @@ defineEmits(['update:visible', 'confirm', 'cancel'])
 .cancel-btn:hover {
   color: #0f172a;
   background-color: #f1f5f9;
-  border-color: #cbd5e1;
+  border-color: #94a3b8;
 }
 
-/* 确认/危险按钮：与 Logo 图红调一致 (#ef4444 ~ #dc2626) */
+/* 危险/确认按钮 (醒目红色渐变) */
 .danger-btn {
-  height: 38px;
+  height: 40px;
   border-radius: 12px !important;
-  padding: 0 20px;
-  font-weight: 600;
+  padding: 0 22px;
+  font-size: 14px;
+  font-weight: 700;
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
   border: none !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25) !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35) !important;
   transition: all 0.25s ease !important;
 }
 
 .danger-btn:hover {
   background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important;
-  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35) !important;
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.45) !important;
 }
 
 .danger-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
-/* 极简蓝色按钮（备用） */
+/* 蓝色确认按钮 (主色调备用) */
 .primary-btn {
-  height: 38px;
+  height: 40px;
   border-radius: 12px !important;
-  padding: 0 20px;
-  font-weight: 600;
+  padding: 0 22px;
+  font-size: 14px;
+  font-weight: 700;
   background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%) !important;
   border: none !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25) !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
   transition: all 0.25s ease !important;
 }
 
 .primary-btn:hover {
   background: linear-gradient(135deg, #7dd3fc 0%, #0369a1 100%) !important;
-  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35) !important;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45) !important;
 }
 
 .primary-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 </style>
