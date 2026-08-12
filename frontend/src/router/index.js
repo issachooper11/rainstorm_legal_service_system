@@ -37,7 +37,7 @@ const routes = [
             } else if (role === Role.LAWYER || role === Role.ASSISTANT) {
                 return '/dashboard/case-management' // 3, 4 只能看案件管理
             }
-            return '/dashboard/case-management' // 1, 2 默认进案件管理
+            return '/dashboard/market-info' // 1, 2 默认进案件管理
         },
         children: [
             {
