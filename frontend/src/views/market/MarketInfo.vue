@@ -58,6 +58,31 @@
 
         <!-- 第四行：按钮操作区 -->
         <div class="form-row action-row">
+          <!-- 左侧：统计数据展示标签 -->
+          <!-- 左侧：统计数据展示区域（纯文字 + 5种不同主题色） -->
+          <div class="stats-container">
+            <div class="stats-item">
+              <span class="stats-label">企业总数：</span>
+              <span class="stats-value total-color">{{ stats.total_enterprises }}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">已发短信：</span>
+              <span class="stats-value sms-color">{{ stats.total_sms_sent }}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">已发邮件：</span>
+              <span class="stats-value email-color">{{ stats.total_email_sent }}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">意向客户：</span>
+              <span class="stats-value intention-color">{{ stats.total_intention }}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">已签约：</span>
+              <span class="stats-value signed-color">{{ stats.total_signed }}</span>
+            </div>
+          </div>
+          <!-- 右侧：按钮操作区 -->
           <div class="action-right">
             <!-- 批量操作 -->
             <template v-if="isMultiSelect">
@@ -542,10 +567,32 @@ import {
   importMarketExcelApi,
   updateMarketApi,
   deleteMarketApi,
-  sendMarketEmailApi
+  sendMarketEmailApi, getMarketStatsApi
 } from "../../api/market.js"
 import {getEnterpriseTracesApi, createEnterpriseTraceApi} from "../../api/trace.js"
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
+// 2. 声明响应式变量 stats 存储统计数据
+const stats = reactive({
+  total_enterprises: 0,
+  total_sms_sent: 0,
+  total_email_sent: 0,
+  total_intention: 0,
+  total_signed: 0
+})
+
+// 3. 定义获取统计数据的函数
+const fetchStatsData = async () => {
+  try {
+    const res = await getMarketStatsApi()
+    if (res) {
+      // 假设后端返回对象为 { total_enterprises, total_sms_sent, total_email_sent, total_intention, total_signed }
+      // 根据您的接口返回解构赋值
+      Object.assign(stats, res)
+    }
+  } catch (error) {
+    console.error("获取统计数据失败", error)
+  }
+}
 // 点击复制企业名称
 const copyEnterpriseName = (name) => {
   if (!name) return
@@ -872,6 +919,7 @@ const fetchTableData = async () => {
     if (res) {
       tableData.value = res.items
       total.value = res.total
+      await fetchStatsData()
     }
   } catch (error) {
     console.error('获取市场信息失败', error)
@@ -1086,6 +1134,7 @@ const getTraceTypeText = (t) => ({1: '邮件', 2: '电话', 3: '微信', 4: '线
 
 onMounted(() => {
   fetchTableData()
+  fetchStatsData()
 })
 </script>
 
@@ -1347,5 +1396,60 @@ onMounted(() => {
 .clickable-copy-name:hover {
   color: #409eff;
   text-decoration: underline;
+}
+
+/* ==================== 统计展示区域（去 Tag 优化版） ==================== */
+.action-row {
+  display: flex;
+  justify-content: space-between; /* 左右两端对齐 */
+  align-items: center;
+}
+
+.stats-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.stats-item {
+  display: flex;
+  align-items: center;
+  font-size: 14px; /* 与 Element Plus 表单统一字号 */
+  line-height: 1;
+}
+
+/* 标签文字统一为标准的深灰色 */
+.stats-label {
+  color: #606266;
+  font-weight: 400;
+}
+
+/* 基础数字样式 */
+.stats-value {
+  font-weight: 700;
+  font-size: 15px;
+  margin-left: 2px;
+}
+
+/* 5种不同风格的主题颜色 */
+.stats-value.total-color {
+  color: #409eff; /* 1. 企业总数：标准蓝 */
+}
+
+.stats-value.sms-color {
+  color: #e6a23c; /* 2. 已发短信：暖橙色 */
+}
+
+.stats-value.email-color {
+  color: #00b96b; /* 3. 已发邮件：翡翠绿 */
+}
+
+.stats-value.intention-color {
+  color: #722ed1; /* 4. 意向客户：优雅紫 */
+}
+
+.stats-value.signed-color {
+  color: #f56c6c; /* 5. 已签约：醒目红 */
 }
 </style>

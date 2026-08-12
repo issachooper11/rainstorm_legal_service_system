@@ -48,3 +48,11 @@ export function sendMarketEmailApi(data) {
         data
     })
 }
+
+// 6.新增获取统计数据 API
+export function getMarketStatsApi() {
+    return request({
+        url: '/api/v1/market/stats',
+        method: 'get'
+    })
+}

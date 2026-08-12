@@ -11,7 +11,7 @@ from typing import Optional
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.market import MarketEnterprise
+from app.models.market import MarketEnterprise, MarketEnterpriseStatsResponse
 from app.services.market import MarketService
 from app.crud.crud_market import MarketCRUD
 from app.schemas.market import (
@@ -279,3 +279,43 @@ def delete_market_enterprise(
     if not success:
         raise HTTPException(status_code=404, detail="未找到对应的企业信息或已删除")
     return {"code": 200, "message": "删除成功"}
+
+
+@router.get("/stats", response_model=MarketEnterpriseStatsResponse, summary="统计企业各类发送及签约状态总数")
+def get_enterprise_stats(db: Session = Depends(get_db)):
+    # 1. 查询数据库中的所有数据记录
+    enterprises = db.query(MarketEnterprise).all()
+
+    total_enterprises = len(enterprises)
+    total_sms_sent = 0
+    total_email_sent = 0
+    total_intention = 0
+    total_signed = 0
+
+    # 2. 遍历并统计各项指标
+    for item in enterprises:
+        # 统计布尔字段
+        if item.is_intention:
+            total_intention += 1
+        if item.is_signed:
+            total_signed += 1
+
+        # 统计 contact_info (JSON 列表) 中的 is_sms_sent 为 true 的项
+        if isinstance(item.contact_info, list):
+            for contact in item.contact_info:
+                if isinstance(contact, dict) and contact.get("is_sms_sent") is True:
+                    total_sms_sent += 1
+
+        # 统计 email (JSON 列表) 中的 is_sent 为 true 的项
+        if isinstance(item.email, list):
+            for mail in item.email:
+                if isinstance(mail, dict) and mail.get("is_sent") is True:
+                    total_email_sent += 1
+
+    return MarketEnterpriseStatsResponse(
+        total_enterprises=total_enterprises,
+        total_sms_sent=total_sms_sent,
+        total_email_sent=total_email_sent,
+        total_intention=total_intention,
+        total_signed=total_signed
+    )

@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, DateTime, Float, JSON, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -37,3 +38,11 @@ class MarketEnterprise(Base):
 
     # 与 EnterpriseTrace 模型对应
     traces = relationship("EnterpriseTrace", back_populates="enterprise", cascade="all, delete-orphan")
+
+
+class MarketEnterpriseStatsResponse(BaseModel):
+    total_enterprises: int  # 企业总行数
+    total_sms_sent: int  # contact_info 中 is_sms_sent 为 true 的总数量
+    total_email_sent: int  # email 中 is_sent 为 true 的总数量
+    total_intention: int  # is_intention 为 true 的企业总数
+    total_signed: int  # is_signed 为 true 的企业总数
