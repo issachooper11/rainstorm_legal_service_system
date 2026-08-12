@@ -187,21 +187,21 @@
           <template #default="{ row }">
             <div v-if="row.contact_info && row.contact_info.length" class="cell-list-container">
               <div v-for="(item, index) in row.contact_info" :key="index" class="json-cell-item">
-        <span
-            :class="['status-text', item.is_sms_sent ? 'is-sent' : 'is-pending']"
-            @click="handleSendMsg('sms', row, item, index)"
-        >
-          【{{ item.is_sms_sent ? '已发送' : '待发送' }}】
-        </span>
+                <span
+                    :class="['status-text', item.is_sms_sent ? 'is-sent' : 'is-pending']"
+                    @click="handleSendMsg('sms', row, item, index)"
+                >
+                  【{{ item.is_sms_sent ? '已发送' : '待发送' }}】
+                </span>
 
-                <!-- 优化逻辑：判断 item.name 存在且不等于 '待查询' -->
+                <!-- 优化逻辑：精准判断 item.name 存在且不等于 '待查询' -->
                 <span>
-          {{ item.phone }}：
-          <span :class="(item.name && item.name !== '待查询') ? 'contact-name-has-value' : 'contact-name-empty'">
-            {{ item.name || '待查询' }}
-          </span>
-        </span>
-
+                  {{ item.phone }}：
+                  <span
+                      :class="(item.name && item.name !== '待查询') ? 'contact-name-has-value' : 'contact-name-empty'">
+                    {{ item.name || '待查询' }}
+                  </span>
+                </span>
               </div>
             </div>
             <span v-else style="color: #909399;">暂无联系方式</span>
@@ -356,6 +356,24 @@
                 <el-option label="线下" :value="4"/>
               </el-select>
             </el-form-item>
+
+            <!-- 优化新增：是否发送邮件、是否确认手机微信 的下拉控制项 -->
+            <div class="form-row" style="margin-bottom: 18px;">
+              <el-form-item label="发送邮件" style="flex: 1; margin: 0;">
+                <el-select v-model="traceForm.is_email_sent" style="width: 100%;" @change="updateTraceContent">
+                  <el-option label="是" :value="true"/>
+                  <el-option label="否" :value="false"/>
+                </el-select>
+              </el-form-item>
+              <el-form-item label="是否确认手机" label-width="110px" style="flex: 1.2; margin: 0;">
+                <el-select v-model="traceForm.is_phone_wechat_confirmed" style="width: 100%;"
+                           @change="updateTraceContent">
+                  <el-option label="是" :value="true"/>
+                  <el-option label="否" :value="false"/>
+                </el-select>
+              </el-form-item>
+            </div>
+
             <el-form-item label="跟进内容">
               <el-input
                   v-model="traceForm.content"
@@ -447,7 +465,7 @@
       </template>
     </el-dialog>
 
-    <!-- 7. 邮箱发送弹窗（已去除海报附件行） -->
+    <!-- 7. 邮箱发送弹窗 -->
     <el-dialog
         v-model="emailDialogVisible"
         title="发送营销邮件"
@@ -521,8 +539,8 @@ import ConfirmDialog from "../../components/ConfirmDialog.vue";
 // ---------------- 1. 营销模板数据常量定义 ----------------
 const EMAIL_TEMPLATES = {
   1: {
-    subject: "【法律体检】企业的五维法律风险排查清单",
-    body: `{company_name} 负责人：
+    subject: "【免费体检】针对 {company_name} 核心技术保密与股权退出的风险排查",
+    body: `{company_name} 团队 / 负责人：
 
 您好！
 
@@ -538,7 +556,7 @@ const EMAIL_TEMPLATES = {
 
 我们常法团队将为您提供 1 次 15 分钟的线上免费解读，帮您把把脉，提前消除风险隐患。
 
-顺祝商祺！
+祝业务顺遂！
 
 北京觅理律师事务所 常法团队`
   },
@@ -567,7 +585,7 @@ const EMAIL_TEMPLATES = {
 您好！
 
 交易合同是企业的生命线，上下游合作中的细节漏洞往往会给企业造成巨额损失：
-• 【合同订立漏洞】：未明确“质量异议期”与交付标准，买方以质量瑕疵为由拒付货款；
+• 【合同订立漏洞】：未明确“质量异议期”与交付标准，买方以质量瑕瑕为由拒付货款；
 • 【举证防线缺失】：微信、邮件等关键沟通记录未规范留痕，发生纠纷时举证困难；
 • 【发票合规风险】：进项发票开具不及时或真实性核查不到位，引发税务稽查风险。
 
@@ -668,7 +686,14 @@ const traceDrawerVisible = ref(false)
 const currentEnterprise = ref({})
 const traceList = ref([])
 const traceSubmitting = ref(false)
-const traceForm = reactive({trace_type: 2, content: ''})
+
+// 优化新增：跟进表单及两个关联状态
+const traceForm = reactive({
+  trace_type: 1,
+  is_email_sent: true,
+  is_phone_wechat_confirmed: true,
+  content: ''
+})
 
 // 发送目标与弹窗状态
 const currentTargetRow = ref(null)
@@ -770,8 +795,8 @@ const handleEmailCategoryChange = (catVal) => {
   const companyName = currentTargetRow.value?.enterprise_name || ''
   const tpl = EMAIL_TEMPLATES[catVal] || EMAIL_TEMPLATES[5]
 
-  emailForm.subject = tpl.subject
-  emailForm.body = tpl.body.replace('{company_name}', companyName)
+  emailForm.subject = tpl.subject.replace('{company_name}', companyName)
+  emailForm.body = tpl.body.replace(/{company_name}/g, companyName)
 }
 
 const submitSendEmail = async () => {
@@ -889,7 +914,7 @@ const submitEdit = async () => {
   }
 }
 
-// ---------------- 8. 删除与批量处理 (已改用 ConfirmDialog) ----------------
+// ---------------- 8. 删除与批量处理 ----------------
 const handleDelete = (row) => {
   rowToDelete.value = row
   currentActionType.value = 'singleDelete'
@@ -910,7 +935,6 @@ const handleBatchDelete = () => {
   confirmDialogVisible.value = true
 }
 
-// ConfirmDialog 统一点击确认后的响应函数
 const handleConfirmAction = async () => {
   confirmDialogVisible.value = false
   if (currentActionType.value === 'singleDelete') {
@@ -924,7 +948,6 @@ const handleConfirmAction = async () => {
       rowToDelete.value = null
     }
   } else if (currentActionType.value === 'batchDelete') {
-    // 处理批量删除 API 调用逻辑
     ElMessage.info(`已触发删除 ${selectedRows.value.length} 项`)
   }
 }
@@ -965,10 +988,20 @@ const handleCurrentChange = (val) => {
 }
 
 // ---------------- 9. 跟进记录逻辑 ----------------
+// 根据下拉框勾选状态生成对应文案
+const updateTraceContent = () => {
+  const emailText = traceForm.is_email_sent ? '已发送邮件' : '未发送邮件'
+  const phoneWechatText = traceForm.is_phone_wechat_confirmed ? '已确认手机和微信' : '未确认手机和微信'
+  traceForm.content = `${emailText}，${phoneWechatText}`
+}
+
 const handleOpenTrace = async (row) => {
   currentEnterprise.value = row
-  traceForm.content = '发送邮件，确认手机号和微信'
   traceForm.trace_type = 1
+  traceForm.is_email_sent = true
+  traceForm.is_phone_wechat_confirmed = true
+  updateTraceContent() // 初始默认生成：“已发送邮件，已确认手机和微信”
+
   traceDrawerVisible.value = true
   await fetchTraces(row.id)
 }
@@ -986,12 +1019,12 @@ const submitTrace = async () => {
   if (!traceForm.content.trim()) return ElMessage.warning('请输入跟进详细内容')
   traceSubmitting.value = true
   try {
+    // 提交给后端的数据结构保持不变（仅传输 trace_type 与 content）
     await createEnterpriseTraceApi(currentEnterprise.value.id, {
       trace_type: traceForm.trace_type,
       content: traceForm.content
     })
     ElMessage.success('跟进记录添加成功')
-    traceForm.content = ''
     await fetchTraces(currentEnterprise.value.id)
   } catch (error) {
     ElMessage.error('添加失败')
@@ -1103,21 +1136,6 @@ onMounted(() => {
   margin-top: 4px;
 }
 
-.timeline-scroll-container {
-  max-height: 50vh;
-  overflow-y: auto;
-  padding-right: 8px;
-}
-
-.timeline-scroll-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.timeline-scroll-container::-webkit-scrollbar-thumb {
-  background-color: #dcdfe6;
-  border-radius: 3px;
-}
-
 .status-text {
   cursor: pointer;
   font-weight: 500;
@@ -1138,8 +1156,18 @@ onMounted(() => {
   color: #67c23a;
 }
 
+/* 有名字时的颜色（品牌蓝） */
+.contact-name-has-value {
+  color: #409EFF;
+  font-weight: 500;
+}
+
+/* 无名字/待查询时的颜色（灰色） */
+.contact-name-empty {
+  color: #909399;
+}
+
 /* ==================== 跟进记录抽屉专项优化样式 ==================== */
-/* 抽屉整体间距与背景 */
 .drawer-inner-container {
   display: flex;
   flex-direction: column;
@@ -1147,7 +1175,6 @@ onMounted(() => {
   padding: 4px;
 }
 
-/* 通用区块卡片样式（与 20px 圆角保持一致） */
 .trace-card {
   background-color: #ffffff;
   border-radius: 16px;
@@ -1157,7 +1184,6 @@ onMounted(() => {
   transition: all 0.2s ease;
 }
 
-/* 卡片标题及标志线条 */
 .card-header {
   display: flex;
   align-items: center;
@@ -1175,14 +1201,13 @@ onMounted(() => {
 .header-title {
   font-size: 16px;
   font-weight: 800;
-  color: #020617; /* 深度加黑，醒目突出 */
+  color: #020617;
   letter-spacing: 0.3px;
 }
 
-/* 表单内部对齐与按钮控制 */
 .trace-form :deep(.el-form-item__label) {
   font-weight: 700;
-  color: #1e293b; /* 标签文字加深 */
+  color: #1e293b;
 }
 
 .trace-form :deep(.el-textarea__inner) {
@@ -1197,15 +1222,14 @@ onMounted(() => {
 }
 
 .submit-btn {
-  height: 40px; /* 根据需要调整高度 */
+  height: 40px;
   border-radius: 10px;
   font-weight: 600;
   padding: 0 20px;
 }
 
-/* 历史列表滚动容器 */
 .timeline-scroll-container {
-  max-height: calc(100vh - 380px);
+  max-height: calc(100vh - 420px);
   overflow-y: auto;
   padding-right: 6px;
   display: flex;
@@ -1222,7 +1246,6 @@ onMounted(() => {
   border-radius: 4px;
 }
 
-/* 历史单条记录卡片 */
 .history-item-card {
   background-color: #f8fafc;
   border: 1px solid #f1f5f9;
@@ -1257,7 +1280,7 @@ onMounted(() => {
 .creator-name {
   font-size: 13px;
   font-weight: 700;
-  color: #334155; /* 文字加深对齐 */
+  color: #334155;
 }
 
 .trace-time {
@@ -1272,7 +1295,7 @@ onMounted(() => {
 .trace-content {
   margin: 0;
   font-size: 14px;
-  color: #0f172a; /* 正文文字深度加黑 */
+  color: #0f172a;
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-all;
@@ -1280,16 +1303,5 @@ onMounted(() => {
 
 .empty-trace {
   padding: 20px 0;
-}
-
-/* 有名字时的颜色（方案 1：品牌蓝） */
-.contact-name-has-value {
-  color: #409EFF; /* 或者使用 Element Plus 变量 var(--el-color-primary) */
-  font-weight: 500;
-}
-
-/* 无名字/待查询时的颜色（灰色） */
-.contact-name-empty {
-  color: #909399;
 }
 </style>
