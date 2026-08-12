@@ -177,8 +177,19 @@
         </el-table-column>
 
         <el-table-column prop="region" label="地区" width="80" align="center" header-align="center"/>
+        <!-- 企业名称（支持点击一键复制） -->
         <el-table-column prop="enterprise_name" label="企业名称" min-width="200" show-overflow-tooltip align="center"
-                         header-align="center"/>
+                         header-align="center">
+          <template #default="{ row }">
+            <span
+                class="clickable-copy-name"
+                title="点击复制企业名称"
+                @click="copyEnterpriseName(row.enterprise_name)"
+            >
+              {{ row.enterprise_name }}
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column prop="legal_representative" label="法定代表人" width="100" align="center"
                          header-align="center"/>
 
@@ -535,6 +546,28 @@ import {
 } from "../../api/market.js"
 import {getEnterpriseTracesApi, createEnterpriseTraceApi} from "../../api/trace.js"
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
+// 点击复制企业名称
+const copyEnterpriseName = (name) => {
+  if (!name) return
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(name)
+        .then(() => {
+          ElMessage.success(`已复制：${name}`)
+        })
+        .catch(() => {
+          ElMessage.error('复制失败，请重试')
+        })
+  } else {
+    // 降级兼容处理
+    const input = document.createElement('input')
+    input.value = name
+    document.body.appendChild(input)
+    input.select()
+    document.execCommand('copy')
+    document.body.removeChild(input)
+    ElMessage.success(`已复制：${name}`)
+  }
+}
 
 // ---------------- 1. 营销模板数据常量定义 ----------------
 const EMAIL_TEMPLATES = {
@@ -1303,5 +1336,16 @@ onMounted(() => {
 
 .empty-trace {
   padding: 20px 0;
+}
+
+/* 点击复制企业名称的样式 */
+.clickable-copy-name {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.clickable-copy-name:hover {
+  color: #409eff;
+  text-decoration: underline;
 }
 </style>
