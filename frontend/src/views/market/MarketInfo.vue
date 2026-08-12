@@ -58,7 +58,6 @@
 
         <!-- 第四行：按钮操作区 -->
         <div class="form-row action-row">
-          <!-- 左侧：统计数据展示标签 -->
           <!-- 左侧：统计数据展示区域（纯文字 + 5种不同主题色） -->
           <div class="stats-container">
             <div class="stats-item">
@@ -66,12 +65,12 @@
               <span class="stats-value total-color">{{ stats.total_enterprises }}</span>
             </div>
             <div class="stats-item">
-              <span class="stats-label">已发短信：</span>
-              <span class="stats-value sms-color">{{ stats.total_sms_sent }}</span>
-            </div>
-            <div class="stats-item">
               <span class="stats-label">已发邮件：</span>
               <span class="stats-value email-color">{{ stats.total_email_sent }}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">已发短信：</span>
+              <span class="stats-value sms-color">{{ stats.total_sms_sent }}</span>
             </div>
             <div class="stats-item">
               <span class="stats-label">意向客户：</span>
@@ -567,11 +566,13 @@ import {
   importMarketExcelApi,
   updateMarketApi,
   deleteMarketApi,
-  sendMarketEmailApi, getMarketStatsApi
+  sendMarketEmailApi,
+  getMarketStatsApi
 } from "../../api/market.js"
 import {getEnterpriseTracesApi, createEnterpriseTraceApi} from "../../api/trace.js"
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
-// 2. 声明响应式变量 stats 存储统计数据
+
+// 声明响应式变量 stats 存储统计数据
 const stats = reactive({
   total_enterprises: 0,
   total_sms_sent: 0,
@@ -580,19 +581,24 @@ const stats = reactive({
   total_signed: 0
 })
 
-// 3. 定义获取统计数据的函数
+// 获取统计数据接口
 const fetchStatsData = async () => {
   try {
     const res = await getMarketStatsApi()
-    if (res) {
-      // 假设后端返回对象为 { total_enterprises, total_sms_sent, total_email_sent, total_intention, total_signed }
-      // 根据您的接口返回解构赋值
-      Object.assign(stats, res)
+    const data = res.data || res
+
+    if (data) {
+      stats.total_enterprises = data.total_enterprises ?? 0
+      stats.total_sms_sent = data.total_sms_sent ?? 0
+      stats.total_email_sent = data.total_email_sent ?? 0
+      stats.total_intention = data.total_intention ?? 0
+      stats.total_signed = data.total_signed ?? 0
     }
   } catch (error) {
-    console.error("获取统计数据失败", error)
+    console.error('获取统计数据失败:', error)
   }
 }
+
 // 点击复制企业名称
 const copyEnterpriseName = (name) => {
   if (!name) return
@@ -767,7 +773,7 @@ const currentEnterprise = ref({})
 const traceList = ref([])
 const traceSubmitting = ref(false)
 
-// 优化新增：跟进表单及两个关联状态
+// 跟进表单及关联状态
 const traceForm = reactive({
   trace_type: 1,
   is_email_sent: true,
@@ -862,6 +868,9 @@ const submitSendSms = async () => {
     currentTargetItem.value.is_sms_sent = true
     ElMessage.success('短信发送成功，状态已更新！')
     smsDialogVisible.value = false
+
+    // 【优化】状态改变后自动刷新列表及顶部统计
+    fetchTableData()
   } catch (error) {
     console.error('发送短信失败:', error)
     ElMessage.error('短信发送失败')
@@ -903,6 +912,9 @@ const submitSendEmail = async () => {
     currentTargetItem.value.is_sent = true
     ElMessage.success('邮件已成功发送！')
     emailDialogVisible.value = false
+
+    // 【优化】状态改变后自动刷新列表及顶部统计
+    fetchTableData()
   } catch (error) {
     console.error('发送邮件失败:', error)
     ElMessage.error(error.response?.data?.detail?.[0]?.msg || '邮件发送失败，请检查数据格式')
@@ -915,11 +927,16 @@ const submitSendEmail = async () => {
 const fetchTableData = async () => {
   loading.value = true
   try {
-    const res = await getMarketListApi(queryParams)
-    if (res) {
-      tableData.value = res.items
-      total.value = res.total
-      await fetchStatsData()
+    // 【优化】并行同时请求表格数据和最新统计数据，提高页面加载效率并保证绝对同步
+    const [tableRes] = await Promise.all([
+      getMarketListApi(queryParams),
+      fetchStatsData()
+    ])
+
+    if (tableRes) {
+      const data = tableRes.data || tableRes
+      tableData.value = data.items || []
+      total.value = data.total || 0
     }
   } catch (error) {
     console.error('获取市场信息失败', error)
@@ -986,6 +1003,8 @@ const submitEdit = async () => {
     await updateMarketApi(currentEditId.value, editForm)
     ElMessage.success('企业信息修改成功')
     editDialogVisible.value = false
+
+    // 自动触发列表与统计更新
     fetchTableData()
   } catch (error) {
     console.error('修改失败', error)
@@ -1069,7 +1088,6 @@ const handleCurrentChange = (val) => {
 }
 
 // ---------------- 9. 跟进记录逻辑 ----------------
-// 根据下拉框勾选状态生成对应文案
 const updateTraceContent = () => {
   const emailText = traceForm.is_email_sent ? '已发送邮件' : '未发送邮件'
   const phoneWechatText = traceForm.is_phone_wechat_confirmed ? '已确认手机和微信' : '未确认手机和微信'
@@ -1081,7 +1099,7 @@ const handleOpenTrace = async (row) => {
   traceForm.trace_type = 1
   traceForm.is_email_sent = true
   traceForm.is_phone_wechat_confirmed = true
-  updateTraceContent() // 初始默认生成：“已发送邮件，已确认手机和微信”
+  updateTraceContent()
 
   traceDrawerVisible.value = true
   await fetchTraces(row.id)
@@ -1090,7 +1108,7 @@ const handleOpenTrace = async (row) => {
 const fetchTraces = async (enterpriseId) => {
   try {
     const res = await getEnterpriseTracesApi(enterpriseId)
-    if (res) traceList.value = res
+    if (res) traceList.value = res.data || res
   } catch (error) {
     ElMessage.error('获取跟进记录失败')
   }
@@ -1100,7 +1118,6 @@ const submitTrace = async () => {
   if (!traceForm.content.trim()) return ElMessage.warning('请输入跟进详细内容')
   traceSubmitting.value = true
   try {
-    // 提交给后端的数据结构保持不变（仅传输 trace_type 与 content）
     await createEnterpriseTraceApi(currentEnterprise.value.id, {
       trace_type: traceForm.trace_type,
       content: traceForm.content
@@ -1118,8 +1135,9 @@ const submitTrace = async () => {
 const handleUploadExcel = async (options) => {
   try {
     const res = await importMarketExcelApi(options.file)
-    if (res && res.code === 200) {
-      ElMessage.success({message: `导入完成！成功新增 ${res.data.success_count} 条数据。`, duration: 5000})
+    const data = res.data || res
+    if (res) {
+      ElMessage.success({message: `导入完成！成功新增 ${data.success_count || 0} 条数据。`, duration: 5000})
       fetchTableData()
     }
   } catch (error) {
@@ -1134,7 +1152,6 @@ const getTraceTypeText = (t) => ({1: '邮件', 2: '电话', 3: '微信', 4: '线
 
 onMounted(() => {
   fetchTableData()
-  fetchStatsData()
 })
 </script>
 
@@ -1152,7 +1169,8 @@ onMounted(() => {
 
 .action-row {
   margin-top: 16px;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .form-item-custom {
@@ -1399,12 +1417,6 @@ onMounted(() => {
 }
 
 /* ==================== 统计展示区域（去 Tag 优化版） ==================== */
-.action-row {
-  display: flex;
-  justify-content: space-between; /* 左右两端对齐 */
-  align-items: center;
-}
-
 .stats-container {
   display: flex;
   align-items: center;
