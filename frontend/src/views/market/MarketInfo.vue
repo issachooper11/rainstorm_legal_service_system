@@ -626,7 +626,7 @@ const copyEnterpriseName = (name) => {
 const EMAIL_TEMPLATES = {
   1: {
     subject: "【法律体检】企业五维法律风险排查清单",
-    body: `{company_name} 团队 / 负责人：
+    body: `{company_name} 负责人：
 
 您好！
 
