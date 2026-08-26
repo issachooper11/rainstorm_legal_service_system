@@ -384,7 +384,7 @@
           </div>
           <el-form :model="traceForm" label-width="80px" label-position="left" class="trace-form">
             <el-form-item label="跟进方式">
-              <el-select v-model="traceForm.trace_type" placeholder="请选择跟进方式" style="width: 100%;">
+              <el-select v-model="traceForm.trace_type" @change="updateTraceType" placeholder="请选择跟进方式" style="width: 100%;">
                 <el-option label="邮件" :value="1"/>
                 <el-option label="电话" :value="2"/>
                 <el-option label="微信" :value="3"/>
@@ -1088,7 +1088,12 @@ const handleCurrentChange = (val) => {
   queryParams.page = val
   fetchTableData()
 }
-
+// ---------------- 8. 跟进方式逻辑 ----------------
+const updateTraceType = () => {
+  if(traceForm.trace_type !== 1){
+    traceForm.content = '投放短信'
+  }
+}
 // ---------------- 9. 跟进记录逻辑 ----------------
 const updateTraceContent = () => {
   const emailText = traceForm.is_email_sent ? '已发送邮件' : '未发送邮件'
