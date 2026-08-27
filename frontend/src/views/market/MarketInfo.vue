@@ -627,7 +627,7 @@ const copyEnterpriseName = (name) => {
 const EMAIL_TEMPLATES = {
   1: {
     subject: "【法律自查】一份可以直接用的企业法律健康体检清单",
-    body: `{company_name} 负责人：
+    body: `{company_name} ：
 
 您好！
 
