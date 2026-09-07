@@ -16,20 +16,16 @@
             <el-input v-model="queryParams.legal_representative" placeholder="请输入法定代表人" clearable
                       @clear="handleQuery"/>
           </el-form-item>
+          <el-form-item label="联系方式" class="form-item-custom">
+            <el-input v-model="queryParams.contact_info" placeholder="请输入联系方式" clearable @clear="handleQuery"/>
+          </el-form-item>
         </div>
 
         <!-- 第二行输入框：电话、邮箱 -->
         <div class="form-row" style="margin-top: 12px;">
-          <el-form-item label="联系方式" class="form-item-custom">
-            <el-input v-model="queryParams.contact_info" placeholder="请输入联系方式" clearable @clear="handleQuery"/>
-          </el-form-item>
           <el-form-item label="邮箱" class="form-item-custom">
             <el-input v-model="queryParams.email" placeholder="请输入邮箱" clearable @clear="handleQuery"/>
           </el-form-item>
-        </div>
-
-        <!-- 第三行：类别、意向、签约筛选 -->
-        <div class="form-row" style="margin-top: 12px;">
           <el-form-item label="企业类别" class="form-item-custom">
             <el-select v-model="queryParams.enterprise_category" placeholder="全部类别" clearable style="width: 100%;"
                        @change="handleQuery">
@@ -56,7 +52,6 @@
             </el-select>
           </el-form-item>
         </div>
-
         <!-- 第四行：按钮操作区 -->
         <div class="form-row action-row">
           <!-- 左侧：统计数据展示区域（纯文字 + 5种不同主题色） -->
