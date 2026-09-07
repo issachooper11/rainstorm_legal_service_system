@@ -38,6 +38,7 @@
               <el-option label="合同" :value="3"/>
               <el-option label="劳动" :value="4"/>
               <el-option label="综合" :value="5"/>
+              <el-option label="卫健" :value="6"/>
             </el-select>
           </el-form-item>
           <el-form-item label="是否为意向客户" class="form-item-custom">
@@ -484,6 +485,7 @@
             <el-option label="合同" :value="3"/>
             <el-option label="劳动" :value="4"/>
             <el-option label="综合" :value="5"/>
+            <el-option label="卫健" :value="6"/>
           </el-select>
         </el-form-item>
         <el-form-item label="短信内容">
@@ -524,6 +526,7 @@
             <el-option label="合同" :value="3"/>
             <el-option label="劳动" :value="4"/>
             <el-option label="综合" :value="5"/>
+            <el-option label="卫健" :value="6"/>
           </el-select>
         </el-form-item>
         <el-form-item label="邮件主题">
